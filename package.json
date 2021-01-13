@@ -1,0 +1,28 @@
+{
+  "name": "telemetry-blog",
+  "version": "1.0.0",
+  "description": "Back end for the Telemetry blog.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/utkarshpant/telemetry-blog.git"
+  },
+  "author": "Utkarsh Pant",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/utkarshpant/telemetry-blog/issues"
+  },
+  "homepage": "https://github.com/utkarshpant/telemetry-blog#readme",
+  "dependencies": {
+    "dotenv": "^8.2.0",
+    "express": "^4.17.1",
+    "helmet": "^4.2.0",
+    "jsonwebtoken": "^8.5.1",
+    "lodash": "^4.17.20",
+    "mongoose": "^5.10.11",
+    "nodemon": "^2.0.6"
+  }
+}
