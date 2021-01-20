@@ -22,7 +22,7 @@ storiesRouter.post('/save', async(req, res) => {
             subtitle: req.body.storySubtitle,
             body: req.body.storyBody
         },
-        tags: req.body.storyTags,
+        tags: req.body.storyTags
     });
 
     let savedStory = await story.save();
@@ -43,5 +43,38 @@ storiesRouter.get('/get/:storyId', async (req, res) => {
 
     res.send(story);
 });
+
+// edit a story;
+storiesRouter.post('/edit/:storyId', async(req, res) => {
+    const storyId = req.params.storyId;
+    const storyUpdates = {
+        owner: req.body.owner,
+        content: {
+            title: req.body.storyTitle,
+            subtitle: req.body.storySubtitle,
+            body: req.body.storyBody
+        },
+        tags: req.body.storyTags
+    }
+    const story = await Story.findByIdAndUpdate(storyId, storyUpdates)
+        .catch(err => {
+            console.log("An error occured in updating the story.");
+            res.status(500).send("An error occured in updating the story.");
+        });
+    
+    res.status(201).send(story);
+});
+
+// delete a story;
+storiesRouter.delete('/delete/:storyId', async (req, res) => {
+    const storyId = req.params.storyId;
+    const story = await Story.findByIdAndDelete(storyId)
+        .catch(err => {
+            console.log("An error occured in deleting the story.");
+            res.status(500).send("An error occured in deleting the story.");
+        });
+
+    res.status(204).send();
+})
 
 module.exports = storiesRouter;
