@@ -89,6 +89,6 @@ usersRouter.get('/get/:userId/stories', async (req, res) => {
     .select('content tags datePublished');
 
     res.send(stories);
-})
+});
 
 module.exports = usersRouter;
