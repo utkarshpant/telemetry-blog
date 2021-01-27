@@ -2,7 +2,9 @@
 const express = require('express');
 const usersRouter = express.Router();
 const _ = require('lodash');
-
+const userReqValidation = require('../middlewares/userMiddleware');
+const nodemailer = require('nodemailer');
+const { randomBytes } = require('crypto'); 
 // User Schema;
 const User = require('../schema/userSchema');
 const Story = require('../schema/storySchema');
@@ -14,7 +16,7 @@ usersRouter.get('/', (req, res) => {
 
 // save a new user's data;
 // validations for existing users will come under auth API;
-usersRouter.post('/save', async(req, res) => {
+usersRouter.post('/new', userReqValidation.validateNewUserRequest, async(req, res) => {
     user = new User({
         name: req.body.name,
         email: req.body.email,
@@ -22,13 +24,42 @@ usersRouter.post('/save', async(req, res) => {
         profilePicture: "sample/path/to/picture",
         socialMediaHandles: {
             twitter: req.body.twitter,
-        },
-        stories: []
+        }
     });
 
     let savedUser = await user.save();
+    const token = user.generateJWT();
     console.log(savedUser);
-    res.send(savedUser);
+    res.header('x-auth-token', token).send(savedUser);
+});
+
+// update existing user;
+usersRouter.post('/update/:userId', userReqValidation.validateUpdateUserDataRequest, async (req, res) => {
+    const userId = req.params.userId;
+    let updates = {};
+
+    // building the update query dynamically;
+    for (property of Object.keys(req.body)) {
+        console.log(property, req.body[property]);
+        updates[property] = req.body[property];
+    }
+    
+    await User.findByIdAndUpdate(userId, { $set: updates })
+        .then(user => {
+            if (user) {
+                res.send(user);
+            } else {
+                console.log("The User ID is invalid.");
+                res.status(500).send("The User ID is invalid.");    
+            }
+        })
+        .catch(err => {
+            console.log("An error occured in updating user information");
+            res.status(500).send("An error occured in updating the user information.");
+        });
+
+
+    // res.status(201).send(updatedUser);
 });
 
 // get a user's data;

@@ -23,7 +23,9 @@ mongoose.connect(connectionString, { useNewUrlParser: true, useUnifiedTopology: 
     } else {
         console.log("Connected to the dev database!");
     }
-})
+});
+
+mongoose.set('useFindAndModify', false);
     
 // Handling requests
 app.get('/', (req, res) => {

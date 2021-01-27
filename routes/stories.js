@@ -14,7 +14,7 @@ storiesRouter.get('/', (req, res) => {
 
 
 // save a story;
-storiesRouter.post('/save', async(req, res) => {
+storiesRouter.post('/new', async(req, res) => {
     story = new Story({
         owner: req.body.owner,
         content: {
@@ -45,9 +45,9 @@ storiesRouter.get('/get/:storyId', async (req, res) => {
 });
 
 // edit a story;
-storiesRouter.post('/edit/:storyId', async(req, res) => {
+storiesRouter.post('/update/:storyId', async(req, res) => {
     const storyId = req.params.storyId;
-    const storyUpdates = {
+    const updates = {
         owner: req.body.owner,
         content: {
             title: req.body.storyTitle,
@@ -55,14 +55,18 @@ storiesRouter.post('/edit/:storyId', async(req, res) => {
             body: req.body.storyBody
         },
         tags: req.body.storyTags
-    }
-    const story = await Story.findByIdAndUpdate(storyId, storyUpdates)
+    };
+
+    await Story.findByIdAndUpdate(storyId, updates)
+        .then(story => {
+            res.send(story);
+        })
         .catch(err => {
             console.log("An error occured in updating the story.");
             res.status(500).send("An error occured in updating the story.");
         });
     
-    res.status(201).send(story);
+    // res.status(201).send(updatedStory);
 });
 
 // delete a story;
