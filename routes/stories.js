@@ -2,6 +2,7 @@
 const express = require('express');
 const storiesRouter = express.Router();
 const _ = require('lodash');
+const storyReqValidation = require("../middlewares/storyMiddleware");
 
 // User Schema;
 const Story = require('../schema/storySchema');
@@ -14,7 +15,7 @@ storiesRouter.get('/', (req, res) => {
 
 
 // save a story;
-storiesRouter.post('/new', async(req, res) => {
+storiesRouter.post('/new', storyReqValidation.validateNewStoryRequest, async(req, res) => {
     story = new Story({
         owner: req.body.owner,
         content: {
@@ -45,28 +46,29 @@ storiesRouter.get('/get/:storyId', async (req, res) => {
 });
 
 // edit a story;
-storiesRouter.post('/update/:storyId', async(req, res) => {
+storiesRouter.post('/update/:storyId', storyReqValidation.validateUpdateStoryRequest, async(req, res) => {
     const storyId = req.params.storyId;
-    const updates = {
-        owner: req.body.owner,
-        content: {
-            title: req.body.storyTitle,
-            subtitle: req.body.storySubtitle,
-            body: req.body.storyBody
-        },
-        tags: req.body.storyTags
-    };
+    let updates = {};
 
-    await Story.findByIdAndUpdate(storyId, updates)
+    // building the update query dynamically;
+    for (property of Object.keys(req.body)) {
+        updates[property] = req.body[property];
+    }
+    
+    await Story.findByIdAndUpdate(storyId, { $set: updates })
         .then(story => {
-            res.send(story);
+            if (story) {
+                res.send(story);
+            } else {
+                console.log("The Story ID is invalid.");
+                res.status(500).send("The Story ID is invalid.");    
+            }
         })
         .catch(err => {
-            console.log("An error occured in updating the story.");
-            res.status(500).send("An error occured in updating the story.");
+            console.log("An error occured in updating the Story.");
+            res.status(500).send("An error occured in updating the Story.");
         });
-    
-    // res.status(201).send(updatedStory);
+
 });
 
 // delete a story;

@@ -1,6 +1,9 @@
 const joi = require('joi');
 const userSchema = require('../schema/userSchema');
 const validateToken = require('../validations/jwtValidation');
+const jwt = require('jsonwebtoken');
+const config = require('config');
+
 /*
     This function is middleware to validate 
     a request to create a new user, and will respond
@@ -33,6 +36,7 @@ async function validateNewUserRequest(req, res, next) {
         return res.status(400).send(err);
     }
 };
+
 
 /*
     This function is middleware to validate 
@@ -71,6 +75,22 @@ async function validateUpdateUserDataRequest(req, res, next) {
 };
 
 
+/*
+    This function is middleware to validate a request for the current user's information,
+    i.e., the user identified in the JWT.
+*/
+async function validateCurrentUserRequest(req, res, next) {
+    const token = jwt.verify(req.header('x-auth-token'), config.get('jwtPrivateKey'));
+    if (token) {
+        req.userId = token._id;
+        next();
+    } else {
+        return res.status(401).send("Invalid token!");
+    }
+}
+
+
 
 exports.validateNewUserRequest = validateNewUserRequest;
 exports.validateUpdateUserDataRequest = validateUpdateUserDataRequest;
+exports.validateCurrentUserRequest = validateCurrentUserRequest;

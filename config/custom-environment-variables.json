@@ -1,0 +1,5 @@
+{
+    "jwtPrivateKey": "telemetry_jwtPrivateKey",
+    "txnMailUsername": "telemetry_txnMailUsername",
+    "txnMailPassword": "telemetry_txnMailPassword"
+}
