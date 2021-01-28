@@ -1,6 +1,7 @@
+const config = require('config');
 const joi = require('joi');
 const storySchema = require('../schema/storySchema');
-const validateToken = require('../validations/jwtValidation');
+const jwt = require('jsonwebtoken');
 
 /*
     This function is middleware to validate 
@@ -40,16 +41,19 @@ async function validateNewStoryRequest(req, res, next) {
         }
     });
 
-    if (validateToken(req.header('x-auth-token'), req.body.owner) === true) {
-        try {
-            const result = await schema.validateAsync(req.body, {allowUnknown: true});
-            next();
-        } catch (err) {
-            return res.status(400).send(err);
+    jwt.verify(req.header('x-auth-token'), config.get('jwtPrivateKey'), async (err, decoded) => {
+        if (err) {
+            res.status(401).send(err);
+        } else {
+            req.userId = decoded._id;
+            try {
+                const result = await schema.validateAsync(req.body, {allowUnknown: true});
+                next();
+            } catch (err) {
+                return res.status(400).send(err);
+            }
         }
-    } else {
-        return res.status(401).send("Invalid token!");
-    }
+    });
 };
 
 /*
@@ -60,11 +64,6 @@ async function validateNewStoryRequest(req, res, next) {
 */
 async function validateUpdateStoryRequest(req, res, next) {
     const schema = joi.object({
-        owner: joi.string()
-                .min(3)
-                .max(50)
-                .required()
-                .trim(),
         content: {
             title: joi.string()
                     .required()
@@ -76,7 +75,6 @@ async function validateUpdateStoryRequest(req, res, next) {
                     .max(200)
                     .trim(),
             body: joi.string()
-            .required()
             .min(1)
             .max(20000)
             .trim(),
@@ -84,23 +82,21 @@ async function validateUpdateStoryRequest(req, res, next) {
         tags: joi.array()
                 .items(joi.string().max(15))
                 .max(5),
-        socialMediaHandles: {
-            twitter: joi.string()
-                        .max(15)
-                        .min(2)
-        }
     });
     
-    if (validateTokenForStories(req.header('x-auth-token'), req.params.storyId) === true) {
-        try {
-            const result = await schema.validateAsync(req.body);
-            next();
-        } catch (err) {
-            return res.status(400).send(err);
+    jwt.verify(req.header('x-auth-token'), config.get('jwtPrivateKey'), async (err, decoded) => {
+        if (err) {
+            res.status(401).send(err);
+        } else {
+            req.userId = decoded._id;
+            try {
+                const result = await schema.validateAsync(req.body);
+                next();
+            } catch (err) {
+                return res.status(400).send(err);
+            }
         }
-    } else {
-        return res.status(401).send("Invalid token!");
-    } 
+    });
 };
 
 exports.validateNewStoryRequest = validateNewStoryRequest;

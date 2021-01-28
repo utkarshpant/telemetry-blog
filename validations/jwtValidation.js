@@ -30,3 +30,4 @@ async function validateTokenForStories(token, storyId) {
 };
 
 exports.validateToken = validateToken;
+exports.validateTokenForStories = validateTokenForStories;
