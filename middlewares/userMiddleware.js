@@ -62,7 +62,7 @@ async function validateUpdateUserDataRequest(req, res, next) {
         }
     });
     
-    jwt.verify(req.header('x-auth-token'), config.get('jwtPrivateKey'), (err, decoded) => {
+    jwt.verify(req.header('x-auth-token'), config.get('jwtPrivateKey'), async (err, decoded) => {
         if (err) {
             return res.status(401).send("Invalid token.");
         } else {
