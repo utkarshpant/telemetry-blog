@@ -73,27 +73,6 @@ storiesRouter.post('/update/:storyId', storyReqValidation.validateUpdateStoryReq
             res.send(savedStory);
         }
     });
-
-    // let updates = {};
-
-    // // building the update query dynamically;
-    // for (property of Object.keys(req.body)) {
-    //     updates[property] = req.body[property];
-    // }
-    
-    // await Story.findByIdAndUpdate(storyId, { $set: updates })
-    //     .then(story => {
-    //         if (story) {
-    //             res.send(story);
-    //         } else {
-    //             console.log("The Story ID is invalid.");
-    //             res.status(500).send("The Story ID is invalid.");    
-    //         }
-    //     })
-    //     .catch(err => {
-    //         console.log("An error occured in updating the Story.");
-    //         res.status(500).send("An error occured in updating the Story.");
-    //     });
 });
 
 // delete a story;
