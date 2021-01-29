@@ -42,28 +42,23 @@ usersRouter.post('/new', userReqValidation.validateNewUserRequest, async(req, re
 // update existing user;
 usersRouter.post('/update/:userId', userReqValidation.validateUpdateUserDataRequest, async (req, res) => {
     const userId = req.params.userId;
-    let updates = {};
+    const user = await User.findById(userId);
 
-    // building the update query dynamically;
+    if (req.params.user != req.userId) {
+        return res.status(401).send("Invalid token");
+    }
+   
     for (property of Object.keys(req.body)) {
-        console.log(property, req.body[property]);
-        updates[property] = req.body[property];
+        user[property] = req.body[property];
     }
     
-    await User.findByIdAndUpdate(userId, { $set: updates })
-        .then(user => {
-            if (user) {
-                res.send(user);
-            } else {
-                console.log("The User ID is invalid.");
-                res.status(500).send("The User ID is invalid.");    
-            }
-        })
-        .catch(err => {
-            console.log("An error occured in updating user information");
-            res.status(500).send("An error occured in updating the user information.");
-        });
-
+    await user.save((err, savedUser) => {
+        if (err) {
+            res.status(500).send(err);
+        } else {
+            res.send(savedUser);
+        }
+    })
 });
 
 // get a user's data;

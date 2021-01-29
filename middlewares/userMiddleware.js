@@ -62,16 +62,18 @@ async function validateUpdateUserDataRequest(req, res, next) {
         }
     });
     
-    if (validateToken(req.header('x-auth-token'), req.params.userId) === true) {
-        try {
-            const result = await schema.validateAsync(req.body);
-            next();
-        } catch (err) {
-            return res.status(400).send(err);
+    jwt.verify(req.header('x-auth-token'), config.get('jwtPrivateKey'), (err, decoded) => {
+        if (err) {
+            return res.status(401).send("Invalid token.");
+        } else {
+            req.userId = decoded._id;
+            try {
+                const result = await schema.validateAsync(req.body, {allowUnknown: true});
+            } catch (err) {
+                return res.status(400).send(err);
+            }
         }
-    } else {
-        return res.status(401).send("Invalid token!");
-    } 
+    });
 };
 
 

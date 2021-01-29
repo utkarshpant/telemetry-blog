@@ -59,7 +59,6 @@ storiesRouter.post('/update/:storyId', storyReqValidation.validateUpdateStoryReq
     const story = await Story.findById(storyId);
    
     if (story.owner != req.userId) {
-        console.log(story.owner, req.userId);
         return res.status(401).send("Invalid token.");
     }
 
@@ -69,7 +68,7 @@ storiesRouter.post('/update/:storyId', storyReqValidation.validateUpdateStoryReq
 
     await story.save((err, savedStory) => {
         if (err) {
-            res.status(502).send(err);
+            res.status(500).send(err);
         } else {
             res.send(savedStory);
         }

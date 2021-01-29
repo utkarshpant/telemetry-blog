@@ -43,7 +43,7 @@ async function validateNewStoryRequest(req, res, next) {
 
     jwt.verify(req.header('x-auth-token'), config.get('jwtPrivateKey'), async (err, decoded) => {
         if (err) {
-            res.status(401).send(err);
+            return res.status(401).send(err);
         } else {
             req.userId = decoded._id;
             try {
@@ -86,7 +86,7 @@ async function validateUpdateStoryRequest(req, res, next) {
     
     jwt.verify(req.header('x-auth-token'), config.get('jwtPrivateKey'), async (err, decoded) => {
         if (err) {
-            res.status(401).send(err);
+            return res.status(401).send(err);
         } else {
             req.userId = decoded._id;
             try {
