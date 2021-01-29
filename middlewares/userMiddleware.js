@@ -82,13 +82,14 @@ async function validateUpdateUserDataRequest(req, res, next) {
     i.e., the user identified in the JWT.
 */
 async function validateCurrentUserRequest(req, res, next) {
-    const token = jwt.verify(req.header('x-auth-token'), config.get('jwtPrivateKey'));
-    if (token) {
-        req.userId = token._id;
-        next();
-    } else {
-        return res.status(401).send("Invalid token!");
-    }
+    jwt.verify(req.header('x-auth-token'), config.get('jwtPrivateKey'), (err, decoded) => {
+        if (err) {
+            res.status(401).send("Invalid token");
+        } else {
+            req.userId = decoded._id;
+            next();
+        }
+    });
 }
 
 
