@@ -1,6 +1,4 @@
 const joi = require('joi');
-const userSchema = require('../schema/userSchema');
-const validateToken = require('../validations/jwtValidation');
 const jwt = require('jsonwebtoken');
 const config = require('config');
 
