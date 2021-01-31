@@ -3,10 +3,13 @@ const express = require('express');
 const usersRouter = express.Router();
 const _ = require('lodash');
 const userReqValidation = require('../middlewares/userMiddleware');
-const nodemailer = require('nodemailer');
+const sgMail = require('@sendgrid/mail');
 const { randomBytes } = require('crypto');
 const config = require('config');
 const redis = require('redis');
+
+//setting txn mail api key;
+sgMail.setApiKey(config.get('txnMailAPIKey'));
 
 // creating redis client;
 const redisClient = redis.createClient();
@@ -34,9 +37,8 @@ usersRouter.post('/new', userReqValidation.validateNewUserRequest, async(req, re
     });
 
     let savedUser = await user.save();
-    const token = user.generateJWT();
     console.log(savedUser);
-    res.header('x-auth-token', token).send(savedUser);
+    res.status(201).send(savedUser);
 });
 
 // update existing user;
@@ -44,7 +46,7 @@ usersRouter.post('/update/:userId', userReqValidation.validateUpdateUserDataRequ
     const userId = req.params.userId;
     const user = await User.findById(userId);
 
-    if (req.params.user != req.userId) {
+    if (userId != req.userId) {
         return res.status(401).send("Invalid token");
     }
    
@@ -98,9 +100,9 @@ usersRouter.post('/signin', async (req, res) => {
     userEmail = req.body.email;
     const user = await User.findOne({email: userEmail});
     if (user) {
-        const emailSentStatus = await sendSignInEmailToUser(userEmail);
+        const emailSentStatus = await sendSignInEmailToUser(user);
         if (emailSentStatus) {
-            res.send(`Check ${userEmail} for the sign-in link.`);
+            res.send(`Check ${user.email} for the sign-in link.`);
         }
     } else {
         res.status(401).send("This email is not registered.");
@@ -118,36 +120,45 @@ usersRouter.get('/authenticate/:reqRandomString', async (req, res) => {
             const token = user.generateJWT();
             res.header('x-auth-token', token).send("Signed in with token.");
         } else {
-            res.status(500).send("Error in signing in.");
+            res.status(500).send("Error.", err);
         }
     });
  
 });
 
-// all big functions doing hot boy shit;
-// to make code nicer to read;
 
 // Send sign-in link to a user;
-async function sendSignInEmailToUser(userEmail) {
-    const smtpTransport = nodemailer.createTransport({
-        service: "gmail",
-        host: "smtp.gmail.com",
-        auth: {
-            user: config.get("txnMailUsername"),
-            pass: config.get("txnMailPassword")
-        }
-    });
-     
+async function sendSignInEmailToUser(user) {
+    // const smtpTransport = nodemailer.createTransport({
+    //     service: "gmail",
+    //     host: "smtp.gmail.com",
+    //     auth: {
+    //         user: config.get("txnMailUsername"),
+    //         pass: config.get("txnMailPassword")
+    //     }
+    // });
     const randomString = randomBytes(4).toString('hex');
-    const link = "http://localhost:3000/api/user/authenticate/" + randomString + "?email=" + userEmail;
-    var mailOptions = {
-        to: userEmail,
-        subject: "Your sign-in link for Telemetry.",
-        html : String("Hi!<br>Here's your link to sign in.<br><a href=" + link + ">" + link + "</a>")
+    const link = "https://localhost:3000/api/user/authenticate/" + randomString + "?email=" + userEmail;
+    var message = {
+        to: user.email,
+        from: "support@telemetryblog.in",
+        subject: "Your sign-in link for the Telemetry blog.",
+        html : String(`Hi ${user.name}!<br>Here's your link to sign in.<br><a href=` + link + `>` + link + `</a>`)
+        // subject: 'Sending with SendGrid is Fun',
+        // text: 'and easy to do anywhere, even with Node.js',
+        // html: '<strong>and easy to do anywhere, even with Node.js</strong>',
     };
     
-    let sentMailInfo = await smtpTransport.sendMail(mailOptions);
-    if (sentMailInfo) {
+    // let sentMailInfo = await smtpTransport.sendMail(mailOptions);
+    // if (sentMailInfo) {
+    //     redisClient.set(userEmail, randomString);
+    //     return true;
+    // } else {
+    //     return false;
+    // }
+
+    const sentMailResponse = await sgMail.send(message);
+    if (sentMailResponse[0].statusCode == '202') {
         redisClient.set(userEmail, randomString);
         return true;
     } else {

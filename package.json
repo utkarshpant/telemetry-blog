@@ -17,6 +17,7 @@
   },
   "homepage": "https://github.com/utkarshpant/telemetry-blog#readme",
   "dependencies": {
+    "@sendgrid/mail": "^7.4.2",
     "config": "^3.3.3",
     "dotenv": "^8.2.0",
     "express": "^4.17.1",

@@ -62,11 +62,12 @@ async function validateUpdateUserDataRequest(req, res, next) {
     
     jwt.verify(req.header('x-auth-token'), config.get('jwtPrivateKey'), async (err, decoded) => {
         if (err) {
-            return res.status(401).send("Invalid token.");
+            return res.status(401).send(err);
         } else {
             req.userId = decoded._id;
             try {
                 const result = await schema.validateAsync(req.body, {allowUnknown: true});
+                next();
             } catch (err) {
                 return res.status(400).send(err);
             }
