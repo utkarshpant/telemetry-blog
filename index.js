@@ -4,12 +4,14 @@ const helmet = require('helmet');
 const app = express();
 const users = require('./routes/users');
 const stories = require('./routes/stories');
+const cors = require('cors');
 const mongoose = require('mongoose');
 
 // setting middlewares;
 app.use(express.json());
 app.use(express.urlencoded({extended: true}));
 app.use(helmet());
+app.use(cors());
 
 // routes;
 app.use('/api/user', users);
@@ -34,7 +36,7 @@ app.get('/', (req, res) => {
 
 
 // setting up the server to listen;
-const port = process.env.PORT || 3000;
-app.listen(process.env.PORT || 3000, () => {
+const port = process.env.PORT || 4000;
+app.listen(port, () => {
     console.log(`Listening on port ${port}`);
 });

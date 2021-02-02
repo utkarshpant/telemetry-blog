@@ -105,7 +105,7 @@ usersRouter.post('/signin', async (req, res) => {
             res.send(`Check ${user.email} for the sign-in link.`);
         }
     } else {
-        res.status(401).send("This email is not registered.");
+        res.status(404).send("This email is not registered.");
     }
 });
 
