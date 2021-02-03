@@ -25,7 +25,7 @@ usersRouter.get('/', (req, res) => {
 
 // save a new user's data;
 // validations for existing users will come under auth API;
-usersRouter.post('/new', userReqValidation.validateNewUserRequest, async(req, res) => {
+usersRouter.post('/signup', userReqValidation.validateNewUserRequest, async(req, res) => {
     user = new User({
         name: req.body.name,
         email: req.body.email,
