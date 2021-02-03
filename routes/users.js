@@ -37,6 +37,30 @@ usersRouter.post('/new', userReqValidation.validateNewUserRequest, async(req, re
     });
 
     let savedUser = await user.save();
+    // console.log(savedUser);
+    // res.status(201).send(savedUser);
+    const emailSentStatus = await sendSignInEmailToUser(savedUser);
+    if (emailSentStatus) {
+        res.send(`Check ${user.email} for the sign-in link.`);
+    } else {
+        res.status(500).send("An error occured. Try signing up a while from now!");
+    }
+});
+
+// sign up endpoint;
+// validates new user request, creates a document and triggers sign in;
+usersRouter.post('/new', userReqValidation.validateNewUserRequest, async(req, res) => {
+    user = new User({
+        name: req.body.name,
+        email: req.body.email,
+        bio: req.body.bio,
+        profilePicture: "sample/path/to/picture",
+        socialMediaHandles: {
+            twitter: req.body.twitter,
+        }
+    });
+
+    let savedUser = await user.save();
     console.log(savedUser);
     res.status(201).send(savedUser);
 });
@@ -85,12 +109,12 @@ usersRouter.get('/me', userReqValidation.validateCurrentUserRequest, async(req, 
 // get all stories by a given user;
 usersRouter.get('/get/:userId/stories', async (req, res) => {
     const userId = req.params.userId;
-    const stories = await Story.find({owner: userId}, (err, stories) => {
+    await Story.find({owner: userId}, (err, stories) => {
         if (err) {
             res.status(500).send({error: "An error occured fetching the stories."});
         } else {
             if (stories) {
-                res.send(stories.select('content tags datePublished'));
+                res.send(stories);
             } else {
                 res.status(404).send("No stories found for the given user.");
             }
