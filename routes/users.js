@@ -88,11 +88,14 @@ usersRouter.get('/get/:userId/stories', async (req, res) => {
     const stories = await Story.find({owner: userId}, (err, stories) => {
         if (err) {
             res.status(500).send({error: "An error occured fetching the stories."});
+        } else {
+            if (stories) {
+                res.send(stories.select('content tags datePublished'));
+            } else {
+                res.status(404).send("No stories found for the given user.");
+            }
         }
-    })
-    .select('content tags datePublished');
-
-    res.send(stories);
+    });
 });
 
 // send sign-in link to user via mail;
@@ -129,14 +132,6 @@ usersRouter.get('/authenticate/:reqRandomString', async (req, res) => {
 
 // Send sign-in link to a user;
 async function sendSignInEmailToUser(user) {
-    // const smtpTransport = nodemailer.createTransport({
-    //     service: "gmail",
-    //     host: "smtp.gmail.com",
-    //     auth: {
-    //         user: config.get("txnMailUsername"),
-    //         pass: config.get("txnMailPassword")
-    //     }
-    // });
     const randomString = randomBytes(4).toString('hex');
     const link = "https://localhost:3000/api/user/authenticate/" + randomString + "?email=" + userEmail;
     var message = {
@@ -144,19 +139,8 @@ async function sendSignInEmailToUser(user) {
         from: "support@telemetryblog.in",
         subject: "Your sign-in link for the Telemetry blog.",
         html : String(`Hi ${user.name}!<br>Here's your link to sign in.<br><a href=` + link + `>` + link + `</a>`)
-        // subject: 'Sending with SendGrid is Fun',
-        // text: 'and easy to do anywhere, even with Node.js',
-        // html: '<strong>and easy to do anywhere, even with Node.js</strong>',
     };
     
-    // let sentMailInfo = await smtpTransport.sendMail(mailOptions);
-    // if (sentMailInfo) {
-    //     redisClient.set(userEmail, randomString);
-    //     return true;
-    // } else {
-    //     return false;
-    // }
-
     const sentMailResponse = await sgMail.send(message);
     if (sentMailResponse[0].statusCode == '202') {
         redisClient.set(userEmail, randomString);
