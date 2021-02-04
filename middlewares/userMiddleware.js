@@ -31,7 +31,7 @@ async function validateNewUserRequest(req, res, next) {
         const result = await schema.validateAsync(req.body, {allowUnknown: true});
         next();
     } catch (err) {
-        return res.status(400).send("The request body is poorly formatted.");
+        return res.status(400).send(err);
     }
 };
 
