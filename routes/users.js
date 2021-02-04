@@ -25,7 +25,7 @@ usersRouter.get('/', (req, res) => {
 
 // save a new user's data;
 // validations for existing users will come under auth API;
-usersRouter.post('/signup', userReqValidation.validateNewUserRequest, async(req, res) => {
+usersRouter.post('/signup', userReqValidation.validateNewUserRequest, async (req, res) => {
     user = new User({
         name: req.body.name,
         email: req.body.email,
@@ -36,20 +36,30 @@ usersRouter.post('/signup', userReqValidation.validateNewUserRequest, async(req,
         }
     });
 
-    let savedUser = await user.save();
-    // console.log(savedUser);
-    // res.status(201).send(savedUser);
-    const emailSentStatus = await sendSignInEmailToUser(savedUser);
-    if (emailSentStatus) {
-        res.send(`Check ${user.email} for the sign-in link.`);
-    } else {
-        res.status(500).send("An error occured. Try signing up a while from now!");
-    }
+    await User.exists({ email: req.body.email }, async (err, res) => {
+        if (err) {
+            res.status(500).send("An error occured. Try again in a while.");
+        } else {
+            if (res == false) {
+                let savedUser = await user.save();
+                // console.log(savedUser);
+                // res.status(201).send(savedUser);
+                const emailSentStatus = await sendSignInEmailToUser(savedUser);
+                if (emailSentStatus) {
+                    res.send(`Check ${user.email} for the sign-in link.`);
+                } else {
+                    res.status(500).send("An error occured. Try signing up a while from now!");
+                }
+            } else {
+                res.status(409).send("This email is already registered. Try signing in!");
+            }
+        }
+    })
 });
 
 // sign up endpoint;
 // validates new user request, creates a document and triggers sign in;
-usersRouter.post('/new', userReqValidation.validateNewUserRequest, async(req, res) => {
+usersRouter.post('/new', userReqValidation.validateNewUserRequest, async (req, res) => {
     user = new User({
         name: req.body.name,
         email: req.body.email,
@@ -73,11 +83,11 @@ usersRouter.post('/update/:userId', userReqValidation.validateUpdateUserDataRequ
     if (userId != req.userId) {
         return res.status(401).send("Invalid token");
     }
-   
+
     for (property of Object.keys(req.body)) {
         user[property] = req.body[property];
     }
-    
+
     await user.save((err, savedUser) => {
         if (err) {
             res.status(500).send(err);
@@ -100,7 +110,7 @@ usersRouter.get('/get/:userId', async (req, res) => {
 });
 
 // get the current user's data;
-usersRouter.get('/me', userReqValidation.validateCurrentUserRequest, async(req, res) => {
+usersRouter.get('/me', userReqValidation.validateCurrentUserRequest, async (req, res) => {
     const userId = req.userId;
     const currentUser = await User.findById(userId);
     res.send(currentUser);
@@ -109,9 +119,9 @@ usersRouter.get('/me', userReqValidation.validateCurrentUserRequest, async(req, 
 // get all stories by a given user;
 usersRouter.get('/get/:userId/stories', async (req, res) => {
     const userId = req.params.userId;
-    await Story.find({owner: userId}, (err, stories) => {
+    await Story.find({ owner: userId }, (err, stories) => {
         if (err) {
-            res.status(500).send({error: "An error occured fetching the stories."});
+            res.status(500).send({ error: "An error occured fetching the stories." });
         } else {
             if (stories) {
                 res.send(stories);
@@ -125,14 +135,14 @@ usersRouter.get('/get/:userId/stories', async (req, res) => {
 // send sign-in link to user via mail;
 usersRouter.post('/signin', async (req, res) => {
     userEmail = req.body.email;
-    const user = await User.findOne({email: userEmail});
+    const user = await User.findOne({ email: userEmail });
     if (user) {
         const emailSentStatus = await sendSignInEmailToUser(user);
         if (emailSentStatus) {
             res.send(`Check ${user.email} for the sign-in link.`);
         }
     } else {
-        res.status(404).send("This email is not registered.");
+        res.status(404).send("This email is not registered. Try signing up!");
     }
 });
 
@@ -143,31 +153,31 @@ usersRouter.get('/authenticate/:reqRandomString', async (req, res) => {
     redisClient.get(reqEmail, async (err, storedRandomString) => {
         if (storedRandomString === reqRandomString) {
             redisClient.del(reqEmail);
-            const user = await User.findOne({email: reqEmail});
+            const user = await User.findOne({ email: reqEmail });
             const token = user.generateJWT();
             res.header('x-auth-token', token).send("Signed in with token.");
         } else {
             res.status(500).send("Error.", err);
         }
     });
- 
+
 });
 
 
 // Send sign-in link to a user;
 async function sendSignInEmailToUser(user) {
     const randomString = randomBytes(4).toString('hex');
-    const link = "https://localhost:3000/api/user/authenticate/" + randomString + "?email=" + userEmail;
+    const link = "https://localhost:3000/api/user/authenticate/" + randomString + "?email=" + user.email;
     var message = {
         to: user.email,
         from: "support@telemetryblog.in",
         subject: "Your sign-in link for the Telemetry blog.",
-        html : String(`Hi ${user.name}!<br>Here's your link to sign in.<br><a href=` + link + `>` + link + `</a>`)
+        html: String(`Hi ${user.name}!<br>Here's your link to sign in.<br><a href=` + link + `>` + link + `</a>`)
     };
-    
+
     const sentMailResponse = await sgMail.send(message);
     if (sentMailResponse[0].statusCode == '202') {
-        redisClient.set(userEmail, randomString);
+        redisClient.set(user.email, randomString);
         return true;
     } else {
         return false;
