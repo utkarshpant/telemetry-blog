@@ -17,6 +17,7 @@ const redisClient = redis.createClient();
 // User Schema;
 const User = require('../schema/userSchema');
 const Story = require('../schema/storySchema');
+const { send } = require('@sendgrid/mail');
 
 // setting the routes;
 usersRouter.get('/', (req, res) => {
@@ -36,11 +37,11 @@ usersRouter.post('/signup', userReqValidation.validateNewUserRequest, async (req
         }
     });
 
-    await User.exists({ email: req.body.email }, async (err, res) => {
+    await User.exists({ email: req.body.email }, async (err, exists) => {
         if (err) {
             res.status(500).send("An error occured. Try again in a while.");
         } else {
-            if (res == false) {
+            if (exists == false) {
                 let savedUser = await user.save();
                 // console.log(savedUser);
                 // res.status(201).send(savedUser);
@@ -152,12 +153,13 @@ usersRouter.get('/authenticate/:reqRandomString', async (req, res) => {
 
     redisClient.get(reqEmail, async (err, storedRandomString) => {
         if (storedRandomString === reqRandomString) {
-            redisClient.del(reqEmail);
             const user = await User.findOne({ email: reqEmail });
             const token = user.generateJWT();
-            res.header('x-auth-token', token).send("Signed in with token.");
+            res.header('x-auth-token', token).send();
+            redisClient.del(reqEmail);
         } else {
-            res.status(500).send("Error.", err);
+            console.log("Ye kyaaaa ye bhi?");
+            res.status(500).send(err);
         }
     });
 
