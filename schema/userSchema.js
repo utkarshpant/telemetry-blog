@@ -5,12 +5,17 @@ const storySchema = require('./storySchema');
 const config = require('config');
 
 const userSchema = new mongoose.Schema({
-    name: {
+    firstName: {
         type: String,
         required: true,
         trim: true,
         max: 50,
         min: 3
+    },
+    lastName: {
+        type: String,
+        trim: true,
+        max: 50,
     },
     email: {
         type: String,

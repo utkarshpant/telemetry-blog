@@ -101,13 +101,16 @@ usersRouter.post('/update/:userId', userReqValidation.validateUpdateUserDataRequ
 // get a user's data;
 usersRouter.get('/get/:userId', async (req, res) => {
     const userId = req.params.userId;
-    const user = await User.findById(userId, (err, res) => {
+    await User.findById(userId, (err, userData) => {
         if (err) {
             res.status(500).send("We're sorry, an error occured.");
+        } else {
+            if (userData == null) {
+                res.status(404).send("No user found.");
+            }
+            res.send(userData);
         }
     });
-
-    res.send(user);
 });
 
 // get the current user's data;
