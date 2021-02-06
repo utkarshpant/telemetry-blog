@@ -11,8 +11,7 @@ async function validateNewUserRequest(req, res, next) {
     const schema = joi.object({
         name: joi.string()
                 .min(3)
-                .max(50)
-                .required(),
+                .max(50),
         email: joi.string()
                 .min(5)
                 .max(100)
@@ -31,7 +30,7 @@ async function validateNewUserRequest(req, res, next) {
         const result = await schema.validateAsync(req.body, {allowUnknown: true});
         next();
     } catch (err) {
-        return res.status(400).send(err);
+        return res.status(404).send(err);
     }
 };
 

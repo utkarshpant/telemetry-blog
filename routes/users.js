@@ -27,24 +27,25 @@ usersRouter.get('/', (req, res) => {
 // save a new user's data;
 // validations for existing users will come under auth API;
 usersRouter.post('/signup', userReqValidation.validateNewUserRequest, async (req, res) => {
-    user = new User({
-        name: req.body.name,
-        email: req.body.email,
-        bio: req.body.bio,
-        profilePicture: "sample/path/to/picture",
-        socialMediaHandles: {
-            twitter: req.body.twitter,
-        }
-    });
 
     await User.exists({ email: req.body.email }, async (err, exists) => {
         if (err) {
             res.status(500).send("An error occured. Try again in a while.");
         } else {
             if (exists == false) {
+                user = new User({
+                    firstName: req.body.name.split(' ')[0],
+                    lastName: (req.body.name.split(' ')[1] ? req.body.name.split(' ')[1] : ""),
+                    name: req.body.name,
+                    email: req.body.email,
+                    bio: req.body.bio,
+                    profilePicture: "",
+                    socialMediaHandles: {
+                        twitter: req.body.twitter,
+                    }
+                });
+
                 let savedUser = await user.save();
-                // console.log(savedUser);
-                // res.status(201).send(savedUser);
                 const emailSentStatus = await sendSignInEmailToUser(savedUser);
                 if (emailSentStatus) {
                     res.send(`Check ${user.email} for the sign-in link.`);
@@ -62,10 +63,11 @@ usersRouter.post('/signup', userReqValidation.validateNewUserRequest, async (req
 // validates new user request, creates a document and triggers sign in;
 usersRouter.post('/new', userReqValidation.validateNewUserRequest, async (req, res) => {
     user = new User({
-        name: req.body.name,
+        firstName: req.body.name.split(' ')[0],
+        lastName: (req.body.name.split(' ')[1] ? req.body.name.split(' ')[1] : ""),
         email: req.body.email,
         bio: req.body.bio,
-        profilePicture: "sample/path/to/picture",
+        profilePicture: "",
         socialMediaHandles: {
             twitter: req.body.twitter,
         }
@@ -177,7 +179,13 @@ async function sendSignInEmailToUser(user) {
         to: user.email,
         from: "support@telemetryblog.in",
         subject: "Your sign-in link for the Telemetry blog.",
-        html: String(`Hi ${user.name}!<br>Here's your link to sign in.<br><a href=` + link + `>` + link + `</a>`)
+        html: String(`
+        <h1>Hi ${user.firstName}!</h1>
+        <br>
+        <h4>Here's your link to sign in.<h4>
+        <br>
+        <a href=` + link + `>` + link + `</a>
+        `)
     };
 
     const sentMailResponse = await sgMail.send(message);
