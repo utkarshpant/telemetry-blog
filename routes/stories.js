@@ -4,10 +4,8 @@ const storiesRouter = express.Router();
 const _ = require('lodash');
 const storyReqValidation = require("../middlewares/storyMiddleware");
 
-// User Schema;
+// Story Schema;
 const Story = require('../schema/storySchema');
-const { findById } = require('../schema/userSchema');
-const User = require('../schema/userSchema');
 
 // setting the routes;
 storiesRouter.get('/', (req, res) => {
@@ -48,6 +46,9 @@ storiesRouter.get('/get/:storyId', async (req, res) => {
         if (err) {
             res.status(500).send("We're sorry, an error occured.");
         } else {
+            if (story == null) {
+                res.status(404).send("The requested Story couldn't be found. Re-check the ID!");
+            }
             res.send(story);
         }
     });
@@ -56,34 +57,43 @@ storiesRouter.get('/get/:storyId', async (req, res) => {
 // edit a story;
 storiesRouter.post('/update/:storyId', storyReqValidation.validateUpdateStoryRequest, async(req, res) => {
     const storyId = req.params.storyId;
-    const story = await Story.findById(storyId);
-   
-    if (story.owner != req.userId) {
-        return res.status(401).send("Invalid token.");
-    }
-
-    for (property of Object.keys(req.body)) {
-        story[property] = req.body[property];
-    }
-
-    await story.save((err, savedStory) => {
+    await Story.findById(storyId, (err, story) => {
         if (err) {
             res.status(500).send(err);
         } else {
-            res.send(savedStory);
+            if (story == null) {
+                res.status(404).send("The requested Story couldn't be found. Re-check the ID!");
+            }
+            
+            if (story.owner != req.userId) {
+                return res.status(401).send("Invalid token.");
+            }
+        
+            for (property of Object.keys(req.body)) {
+                story[property] = req.body[property];
+            }
+        
+            await story.save((err, savedStory) => {
+                if (err) {
+                    res.status(500).send(err);
+                } else {
+                    res.send(savedStory);
+                }
+            });
         }
     });
+   
+    
 });
 
 // delete a story;
 storiesRouter.delete('/delete/:storyId', async (req, res) => {
     const storyId = req.params.storyId;
-    const story = await Story.findByIdAndDelete(storyId)
+    await Story.findByIdAndDelete(storyId)
         .catch(err => {
             console.log("An error occured in deleting the story.");
             res.status(500).send("An error occured in deleting the story.");
         });
-
     res.status(204).send();
 })
 
