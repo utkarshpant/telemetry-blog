@@ -176,21 +176,43 @@ async function sendSignInEmailToUser(user) {
     const randomString = randomBytes(4).toString('hex');
     const link = "https://localhost:3000/api/user/authenticate/" + randomString + "?email=" + user.email;
     var message = {
-        to: user.email,
-        from: "support@telemetryblog.in",
-        subject: "Your sign-in link for the Telemetry blog.",
-        html: String(`
-        <h1>Hi ${user.firstName}!</h1>
-        <br>
-        <h4>Here's your link to sign in.<h4>
-        <br>
-        <a href=` + link + `>` + link + `</a>
-        `)
+        // to: user.email,
+        // from: "support@telemetryblog.in",
+        // subject: "Your sign-in link for the Telemetry blog.",
+        // html: String(`
+        // <h1>Hi ${user.firstName}!</h1>
+        // <br>
+        // <h4>Here's your link to sign in.<h4>
+        // <br>
+        // <a href=` + link + `>` + link + `</a>
+        // `)
+        "to": user.email,
+        "from": {
+            "email": "support@telemetryblog.in",
+            "name": "Telemetry blog Support"
+        },
+        "template_id": config.get('txnMailTemplateId'),
+        "dynamic_template_data": {
+            name: user.firstName,
+            randomToken: randomString,
+            userEmail: user.email,
+            signInLinkText: link
+        }
     };
 
-    const sentMailResponse = await sgMail.send(message);
-    if (sentMailResponse[0].statusCode == '202') {
-        redisClient.set(user.email, randomString);
+    let sentMail;
+    await sgMail.send(message)
+    .then(response => {
+        // console.log(sentMailResponse);
+            redisClient.set(user.email, randomString);
+            sentMail = true;
+    })
+    .catch(err => {
+        console.log(err);
+        sentMail = false;
+    });
+    console.log(sentMail);
+    if (sentMail) {
         return true;
     } else {
         return false;

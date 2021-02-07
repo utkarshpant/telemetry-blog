@@ -1,4 +1,5 @@
 {
     "jwtPrivateKey": "telemetry_jwtPrivateKey",
-    "txnMailAPIKey": "SENDGRID_API_KEY"
+    "txnMailAPIKey": "SENDGRID_API_KEY",
+    "txnMailTemplateId": "telemetry_txnMailTemplateId"
 }
