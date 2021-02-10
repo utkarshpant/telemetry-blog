@@ -129,10 +129,10 @@ usersRouter.get('/get/:userId/stories', async (req, res) => {
         if (err) {
             res.status(500).send({ error: "An error occured fetching the stories." });
         } else {
-            if (stories) {
-                res.send(stories);
-            } else {
+            if (stories.length == 0) {
                 res.status(404).send("No stories found for the given user.");
+            } else {
+                res.send(stories);
             }
         }
     });
@@ -176,16 +176,6 @@ async function sendSignInEmailToUser(user) {
     const randomString = randomBytes(4).toString('hex');
     const link = "https://localhost:3000/api/user/authenticate/" + randomString + "?email=" + user.email;
     var message = {
-        // to: user.email,
-        // from: "support@telemetryblog.in",
-        // subject: "Your sign-in link for the Telemetry blog.",
-        // html: String(`
-        // <h1>Hi ${user.firstName}!</h1>
-        // <br>
-        // <h4>Here's your link to sign in.<h4>
-        // <br>
-        // <a href=` + link + `>` + link + `</a>
-        // `)
         "to": user.email,
         "from": {
             "email": "support@telemetryblog.in",

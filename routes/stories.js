@@ -57,7 +57,7 @@ storiesRouter.get('/get/:storyId', async (req, res) => {
 // edit a story;
 storiesRouter.post('/update/:storyId', storyReqValidation.validateUpdateStoryRequest, async(req, res) => {
     const storyId = req.params.storyId;
-    await Story.findById(storyId, (err, story) => {
+    await Story.findById(storyId, async (err, story) => {
         if (err) {
             res.status(500).send(err);
         } else {
