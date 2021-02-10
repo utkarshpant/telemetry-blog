@@ -109,8 +109,9 @@ usersRouter.get('/get/:userId', async (req, res) => {
         } else {
             if (userData == null) {
                 res.status(404).send("No user found.");
+            } else {
+                res.send(userData);
             }
-            res.send(userData);
         }
     });
 });
