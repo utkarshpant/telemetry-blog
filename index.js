@@ -6,12 +6,14 @@ const users = require('./routes/users');
 const stories = require('./routes/stories');
 const cors = require('cors');
 const mongoose = require('mongoose');
+const morgan = require('morgan');
 
 // setting middlewares;
 app.use(express.json());
 app.use(express.urlencoded({extended: true}));
 app.use(helmet());
 app.use(cors());
+app.use(morgan(':method :url :status :res[content-length] - :response-time ms'));
 
 // routes;
 app.use('/api/user', users);
