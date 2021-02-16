@@ -36,7 +36,7 @@ usersRouter.post('/signup', userReqValidation.validateNewUserRequest, async (req
                 user = new User({
                     firstName: req.body.name.split(' ')[0],
                     lastName: (req.body.name.split(' ')[1] ? req.body.name.split(' ')[1] : ""),
-                    name: req.body.name,
+                    username: req.body.username,
                     email: req.body.email,
                     bio: req.body.bio,
                     profilePicture: "",
@@ -59,29 +59,10 @@ usersRouter.post('/signup', userReqValidation.validateNewUserRequest, async (req
     })
 });
 
-// sign up endpoint;
-// validates new user request, creates a document and triggers sign in;
-usersRouter.post('/new', userReqValidation.validateNewUserRequest, async (req, res) => {
-    user = new User({
-        firstName: req.body.name.split(' ')[0],
-        lastName: (req.body.name.split(' ')[1] ? req.body.name.split(' ')[1] : ""),
-        email: req.body.email,
-        bio: req.body.bio,
-        profilePicture: "",
-        socialMediaHandles: {
-            twitter: req.body.twitter,
-        }
-    });
-
-    let savedUser = await user.save();
-    console.log(savedUser);
-    res.status(201).send(savedUser);
-});
-
 // update existing user;
-usersRouter.post('/update/:userId', userReqValidation.validateUpdateUserDataRequest, async (req, res) => {
-    const userId = req.params.userId;
-    const user = await User.findById(userId);
+usersRouter.post('/update/:username', userReqValidation.validateUpdateUserDataRequest, async (req, res) => {
+    const userIdOrEmail = req.params.username;
+    const user = await User.findOne({username: username});
 
     if (userId != req.userId) {
         return res.status(401).send("Invalid token");
@@ -101,16 +82,17 @@ usersRouter.post('/update/:userId', userReqValidation.validateUpdateUserDataRequ
 });
 
 // get a user's data;
-usersRouter.get('/get/:userId', async (req, res) => {
-    const userId = req.params.userId;
-    await User.findById(userId, (err, userData) => {
+usersRouter.get('/get/:username', async (req, res) => {
+    const username = req.params.username;
+    await User.findOne({username: username}, (err, userData) => {
         if (err) {
             res.status(500).send("We're sorry, an error occured.");
         } else {
             if (userData == null) {
                 res.status(404).send("No user found.");
+            } else {
+                res.send(userData);
             }
-            res.send(userData);
         }
     });
 });
@@ -118,14 +100,23 @@ usersRouter.get('/get/:userId', async (req, res) => {
 // get the current user's data;
 usersRouter.get('/me', userReqValidation.validateCurrentUserRequest, async (req, res) => {
     const userId = req.userId;
-    const currentUser = await User.findById(userId);
-    res.send(currentUser);
+    await User.findById(userId)
+        .then(currentUser => {
+            if (currentUser == null) {
+                res.status(401).send("No user found. Try signing in again!");
+            } else {
+                res.send(currentUser);
+            }
+        })
+        .catch(err => {
+            res.status(500).send(err);
+        })
 });
 
 // get all stories by a given user;
-usersRouter.get('/get/:userId/stories', async (req, res) => {
-    const userId = req.params.userId;
-    await Story.find({ owner: userId }, (err, stories) => {
+usersRouter.get('/get/:username/stories', async (req, res) => {
+    const username = req.params.username;
+    await Story.find({ owner: username }, (err, stories) => {
         if (err) {
             res.status(500).send({ error: "An error occured fetching the stories." });
         } else {
@@ -160,10 +151,9 @@ usersRouter.get('/authenticate/:reqRandomString', async (req, res) => {
         if (storedRandomString === reqRandomString) {
             const user = await User.findOne({ email: reqEmail });
             const token = user.generateJWT();
-            res.header('x-auth-token', token).send();
+            res.cookie('x-auth-token', token).send();
             redisClient.del(reqEmail);
         } else {
-            console.log("Ye kyaaaa ye bhi?");
             res.status(500).send(err);
         }
     });
