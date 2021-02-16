@@ -10,24 +10,27 @@ const config = require('config');
 async function validateNewUserRequest(req, res, next) {
     const schema = joi.object({
         name: joi.string()
-                .min(3)
-                .max(50),
+            .min(3)
+            .max(50),
         email: joi.string()
-                .min(5)
-                .max(100)
-                .email()
-                .required(),
+            .min(5)
+            .max(100)
+            .email()
+            .required(),
+        username: joi.string()
+            .max(20)
+            .required(),
         bio: joi.string()
-                .max(250),
+            .max(250),
         socialMediaHandles: {
             twitter: joi.string()
-                        .max(15)
-                        .min(2)
+                .max(15)
+                .min(2)
         }
     });
 
     try {
-        const result = await schema.validateAsync(req.body, {allowUnknown: true});
+        const result = await schema.validateAsync(req.body, { allowUnknown: true });
         next();
     } catch (err) {
         return res.status(404).send(err);
@@ -44,28 +47,30 @@ async function validateNewUserRequest(req, res, next) {
 async function validateUpdateUserDataRequest(req, res, next) {
     const schema = joi.object({
         name: joi.string()
-                .min(3)
-                .max(50),
+            .min(3)
+            .max(50),
         email: joi.string()
-                .min(5)
-                .max(100)
-                .email(),
+            .min(5)
+            .max(100)
+            .email(),
+        username: joi.string()
+            .max(20),
         bio: joi.string()
-                .max(250),
+            .max(250),
         socialMediaHandles: {
             twitter: joi.string()
-                        .max(15)
-                        .min(2)
+                .max(15)
+                .min(2)
         }
     });
-    
+
     jwt.verify(req.header('x-auth-token'), config.get('jwtPrivateKey'), async (err, decoded) => {
         if (err) {
             return res.status(401).send(err);
         } else {
             req.userId = decoded._id;
             try {
-                const result = await schema.validateAsync(req.body, {allowUnknown: true});
+                const result = await schema.validateAsync(req.body, { allowUnknown: true });
                 next();
             } catch (err) {
                 return res.status(400).send(err);

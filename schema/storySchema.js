@@ -3,8 +3,7 @@ const userSchemaSchema = require('./userSchema');
 
 const storySchema = new mongoose.Schema({
     owner: {
-        type: mongoose.SchemaTypes.ObjectId,
-        ref: 'User'
+        type: String,
     },
     content: {
         title: String,
