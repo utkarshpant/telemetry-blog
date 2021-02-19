@@ -8,6 +8,8 @@ const { randomBytes } = require('crypto');
 const config = require('config');
 const redis = require('redis');
 
+const errorUtility = require("../utilities/responseObjects");
+
 //setting txn mail api key;
 sgMail.setApiKey(config.get('txnMailAPIKey'));
 
@@ -28,41 +30,86 @@ usersRouter.get('/', (req, res) => {
 // validations for existing users will come under auth API;
 usersRouter.post('/signup', userReqValidation.validateNewUserRequest, async (req, res) => {
 
-    await User.exists({ email: req.body.email }, async (err, exists) => {
-        if (err) {
-            res.status(500).send("An error occured. Try again in a while.");
-        } else {
-            if (exists == false) {
-                user = new User({
-                    firstName: req.body.name.split(' ')[0],
-                    lastName: (req.body.name.split(' ')[1] ? req.body.name.split(' ')[1] : ""),
-                    username: req.body.username,
-                    email: req.body.email,
-                    bio: req.body.bio,
-                    profilePicture: "",
-                    socialMediaHandles: {
-                        twitter: req.body.twitter,
-                    }
-                });
+    // await User.exists({ email: req.body.email }, async (err, exists) => {
+    //     if (err) {
+    //         res.status(500).send("An error occured. Try again in a while.");
+    //     } else {
+    //         if (exists == false) {
+    //             user = new User({
+    //                 firstName: req.body.name.split(' ')[0],
+    //                 lastName: (req.body.name.split(' ')[1] ? req.body.name.split(' ')[1] : ""),
+    //                 username: req.body.username,
+    //                 email: req.body.email,
+    //                 bio: req.body.bio,
+    //                 profilePicture: "",
+    //                 socialMediaHandles: {
+    //                     twitter: req.body.twitter,
+    //                 }
+    //             });
 
-                let savedUser = await user.save();
-                const emailSentStatus = await sendSignInEmailToUser(savedUser);
-                if (emailSentStatus) {
-                    res.send(`Check ${user.email} for the sign-in link.`);
-                } else {
-                    res.status(500).send("An error occured. Try signing up a while from now!");
-                }
-            } else {
-                res.status(409).send("This email is already registered. Try signing in!");
-            }
+    //             try {
+    //                 let savedUser = await user.save();
+    //             } catch (err) {
+    //                 let errObj = {};
+    //                 for (field in err.errors) {
+    //                     errObj[field] = err.errors[field].message;
+    //                 }
+    //                 res.status(500).send(errObj);
+    //             }
+
+    //             const emailSentStatus = await sendSignInEmailToUser(savedUser);
+    //             if (emailSentStatus) {
+    //                 res.send(`Check ${user.email} for the sign-in link.`);
+    //             } else {
+    //                 res.status(500).send("An error occured. Try signing up a while from now!");
+    //             }
+    //         } else {
+    //             res.status(409).send("This email is already registered. Try signing in!");
+    //         }
+    //     }
+    // })
+
+    user = new User({
+        firstName: req.body.name.split(' ')[0],
+        lastName: (req.body.name.split(' ')[1] ? req.body.name.split(' ')[1] : ""),
+        username: req.body.username,
+        email: req.body.email,
+        bio: req.body.bio,
+        profilePicture: "",
+        socialMediaHandles: {
+            twitter: req.body.twitter,
         }
-    })
+    });
+
+    await user.save()
+        .then(async (savedUser) => {
+            await sendSignInEmailToUser(savedUser)
+                .then(sent => {
+                    res.send({
+                        data: "EMAIL_SENT",
+                        request: req.body
+                    });
+                })
+                .catch(unsent => {
+                    res.status(500).send({
+                        error: "EMAIL_ERROR",
+                        request: req.body
+                    });
+                })
+        })
+        .catch(error => {
+            let errObj = {};
+            for (field in error.errors) {
+                errObj[field] = error.errors[field].message;
+            }
+            res.status(500).send({error: errObj, request: req.body});
+        })
 });
 
 // update existing user;
 usersRouter.post('/update/:username', userReqValidation.validateUpdateUserDataRequest, async (req, res) => {
     const userIdOrEmail = req.params.username;
-    const user = await User.findOne({username: username});
+    const user = await User.findOne({ username: username });
 
     if (userId != req.userId) {
         return res.status(401).send("Invalid token");
@@ -84,7 +131,7 @@ usersRouter.post('/update/:username', userReqValidation.validateUpdateUserDataRe
 // get a user's data;
 usersRouter.get('/get/:username', async (req, res) => {
     const username = req.params.username;
-    await User.findOne({username: username}, (err, userData) => {
+    await User.findOne({ username: username }, (err, userData) => {
         if (err) {
             res.status(500).send("We're sorry, an error occured.");
         } else {
@@ -162,41 +209,37 @@ usersRouter.get('/authenticate/:reqRandomString', async (req, res) => {
 
 
 // Send sign-in link to a user;
+// resolves to true = sent;
+// rejects to false = unsent;
 async function sendSignInEmailToUser(user) {
-    const randomString = randomBytes(4).toString('hex');
-    const link = "https://localhost:3000/api/user/authenticate/" + randomString + "?email=" + user.email;
-    var message = {
-        "to": user.email,
-        "from": {
-            "email": "support@telemetryblog.in",
-            "name": "Telemetry blog Support"
-        },
-        "template_id": config.get('txnMailTemplateId'),
-        "dynamic_template_data": {
-            name: user.firstName,
-            randomToken: randomString,
-            userEmail: user.email,
-            signInLinkText: link
-        }
-    };
-
-    let sentMail;
-    await sgMail.send(message)
-    .then(response => {
-        // console.log(sentMailResponse);
-            redisClient.set(user.email, randomString);
-            sentMail = true;
+    new Promise(async (resolve, reject) => {
+        const randomString = randomBytes(4).toString('hex');
+        const link = "https://localhost:3000/api/user/authenticate/" + randomString + "?email=" + user.email;
+        var message = {
+            "to": user.email,
+            "from": {
+                "email": "support@telemetryblog.in",
+                "name": "Telemetry blog Support"
+            },
+            "template_id": config.get('txnMailTemplateId'),
+            "dynamic_template_data": {
+                name: user.firstName,
+                randomToken: randomString,
+                userEmail: user.email,
+                signInLinkText: link
+            }
+        };
+        await sgMail.send(message)
+            .then(response => {
+                // console.log(sentMailResponse);
+                redisClient.set(user.email, randomString);
+                resolve(true);
+            })
+            .catch(err => {
+                console.log(err);
+                reject(false);
+            });
     })
-    .catch(err => {
-        console.log(err);
-        sentMail = false;
-    });
-    console.log(sentMail);
-    if (sentMail) {
-        return true;
-    } else {
-        return false;
-    }
 };
 
 module.exports = usersRouter;

@@ -1,35 +1,64 @@
 const mongoose = require('mongoose');
-const joi = require('joi');
 const jwt = require('jsonwebtoken');
 const storySchema = require('./storySchema');
 const config = require('config');
-const { string } = require('joi');
+const { gt, lte, gte } = require('lodash');
 
 const userSchema = new mongoose.Schema({
     firstName: {
         type: String,
         required: true,
         trim: true,
-        max: 50,
-        min: 3
+        validate: {
+            validator: (value) => {
+                return (gt(value.length, 0) && lte(value.length, 50))
+            },
+            message: "INVALID_FIRST_NAME"
+        }
     },
     lastName: {
         type: String,
         trim: true,
-        max: 50,
-        min: 3
+        validate: {
+            validator: (value) => {
+                return (gte(value.length, 0) && lte(value.length, 50))
+            },
+            message: "INVALID_LAST_NAME"
+        }
     },
     username: {
         type:String,
         required: true,
         trim: true,
         max: 20,
+        validate: {
+            validator: async (value) => {
+                const exists = await mongoose.model("User", userSchema).exists({username: value});
+                if (exists) {
+                    return false;
+                } else {
+                    return true;
+                }
+            },
+            message: "USERNAME_TAKEN"
+        }
     },
     email: {
         type: String,
         required: true,
         trim: true,
-        max: 50
+        max: 50,
+        validate: {
+            validator: async (value) => {
+                const exists = await mongoose.model("User", userSchema).exists({email: value});
+                if (exists) {
+                    return false;
+                } else {
+                    return true;
+                }
+            },
+            message: "EMAIL_TAKEN"
+        }
     },
     bio: String,
     profilePicture: String,
@@ -47,14 +76,14 @@ userSchema.methods.generateJWT = function() {
     return token;
 }
 
-// a custom validator for username
-userSchema.path('username').validate((value, response) => {
-    mongoose.model('User', userSchema).exists({email: value})
-        .then(exists => {
-            if (exists) {
-                response(false);
-            }
-        })
-}, "This username is already taken! Try another.");
+// // a custom validator for username
+// userSchema.path('username').validate( async (value) => {
+//     let exists = await mongoose.model('User', userSchema).exists({username: value});
+//     if (exists) {
+//         return false;
+//     } else {
+//         return true;
+//     }
+// }, "This username is already taken! Try another.");
 
 module.exports = mongoose.model('User', userSchema);
