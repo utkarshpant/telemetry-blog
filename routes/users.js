@@ -102,7 +102,7 @@ usersRouter.post('/signup', userReqValidation.validateNewUserRequest, async (req
             for (field in error.errors) {
                 errObj[field] = error.errors[field].message;
             }
-            res.status(500).send({error: errObj, request: req.body});
+            res.status(500).send({ error: errObj, request: req.body });
         })
 });
 
@@ -179,15 +179,37 @@ usersRouter.get('/get/:username/stories', async (req, res) => {
 // send sign-in link to user via mail;
 usersRouter.post('/signin', async (req, res) => {
     userEmail = req.body.email;
-    const user = await User.findOne({ email: userEmail });
-    if (user) {
-        const emailSentStatus = await sendSignInEmailToUser(user);
-        if (emailSentStatus) {
-            res.send(`Check ${user.email} for the sign-in link.`);
-        }
-    } else {
-        res.status(404).send("This email is not registered. Try signing up!");
-    }
+    await User.findOne({ email: userEmail })
+        .then(async (user) => {
+            if (user) {
+                await sendSignInEmailToUser(user)
+                .then(sent => {
+                    res.send({
+                        data: "EMAIL_SENT",
+                        request: req.body
+                    });
+                })
+                .catch(unsent => {
+                    res.status(500).send({
+                        error: "EMAIL_ERROR",
+                        request: req.body
+                    });
+                })
+            } else {
+                res.status(404).send({
+                    error: {
+                        email: "NO_SUCH_EMAIL"
+                    },
+                    request: req.body
+                });
+            }
+        })
+        .catch(error => {
+            res.status(500).send({ 
+                error: "SERVER_ERROR", 
+                request: req.body 
+            });
+        })
 });
 
 usersRouter.get('/authenticate/:reqRandomString', async (req, res) => {
@@ -234,12 +256,20 @@ async function sendSignInEmailToUser(user) {
                 // console.log(sentMailResponse);
                 redisClient.set(user.email, randomString);
                 resolve(true);
+                console.log("SENT EMAIL");
             })
             .catch(err => {
                 console.log(err);
                 reject(false);
+                console.log("DIDN'T SEND");
             });
     })
+        .then(sent => {
+            return true;
+        })
+        .catch(err => {
+            return false;
+        })
 };
 
 module.exports = usersRouter;
