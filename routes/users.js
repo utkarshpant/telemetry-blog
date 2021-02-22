@@ -1,25 +1,27 @@
 // required modules and exports;
 const express = require('express');
-const usersRouter = express.Router();
 const _ = require('lodash');
-const userReqValidation = require('../middlewares/userMiddleware');
 const sgMail = require('@sendgrid/mail');
 const { randomBytes } = require('crypto');
 const config = require('config');
 const redis = require('redis');
 
-const errorUtility = require("../utilities/responseObjects");
+/*
+    1. Setting up SendGrid API and methods;
+    2. Setting up a redis client;
+    3. Importing request validation middleware;
+    4. Setting up the router for the users endpoints;
+*/
 
-//setting txn mail api key;
 sgMail.setApiKey(config.get('txnMailAPIKey'));
-
-// creating redis client;
 const redisClient = redis.createClient();
+const userReqValidation = require('../middlewares/userMiddleware');
+const usersRouter = express.Router();
+
 
 // User Schema;
 const User = require('../schema/userSchema');
 const Story = require('../schema/storySchema');
-const { send } = require('@sendgrid/mail');
 
 // setting the routes;
 usersRouter.get('/', (req, res) => {
@@ -29,46 +31,8 @@ usersRouter.get('/', (req, res) => {
 // save a new user's data;
 // validations for existing users will come under auth API;
 usersRouter.post('/signup', userReqValidation.validateNewUserRequest, async (req, res) => {
-
-    // await User.exists({ email: req.body.email }, async (err, exists) => {
-    //     if (err) {
-    //         res.status(500).send("An error occured. Try again in a while.");
-    //     } else {
-    //         if (exists == false) {
-    //             user = new User({
-    //                 firstName: req.body.name.split(' ')[0],
-    //                 lastName: (req.body.name.split(' ')[1] ? req.body.name.split(' ')[1] : ""),
-    //                 username: req.body.username,
-    //                 email: req.body.email,
-    //                 bio: req.body.bio,
-    //                 profilePicture: "",
-    //                 socialMediaHandles: {
-    //                     twitter: req.body.twitter,
-    //                 }
-    //             });
-
-    //             try {
-    //                 let savedUser = await user.save();
-    //             } catch (err) {
-    //                 let errObj = {};
-    //                 for (field in err.errors) {
-    //                     errObj[field] = err.errors[field].message;
-    //                 }
-    //                 res.status(500).send(errObj);
-    //             }
-
-    //             const emailSentStatus = await sendSignInEmailToUser(savedUser);
-    //             if (emailSentStatus) {
-    //                 res.send(`Check ${user.email} for the sign-in link.`);
-    //             } else {
-    //                 res.status(500).send("An error occured. Try signing up a while from now!");
-    //             }
-    //         } else {
-    //             res.status(409).send("This email is already registered. Try signing in!");
-    //         }
-    //     }
-    // })
-
+    const reponse = {};
+    
     user = new User({
         firstName: req.body.name.split(' ')[0],
         lastName: (req.body.name.split(' ')[1] ? req.body.name.split(' ')[1] : ""),
@@ -102,7 +66,10 @@ usersRouter.post('/signup', userReqValidation.validateNewUserRequest, async (req
             for (field in error.errors) {
                 errObj[field] = error.errors[field].message;
             }
-            res.status(500).send({ error: errObj, request: req.body });
+            res.status(500).send({ 
+                error: errObj, 
+                request: req.body 
+            });
         })
 });
 
@@ -129,19 +96,28 @@ usersRouter.post('/update/:username', userReqValidation.validateUpdateUserDataRe
 });
 
 // get a user's data;
-usersRouter.get('/get/:username', async (req, res) => {
+usersRouter.get('/get/:username', (req, res) => {
     const username = req.params.username;
-    await User.findOne({ username: username }, (err, userData) => {
-        if (err) {
-            res.status(500).send("We're sorry, an error occured.");
-        } else {
+    User.findOne({ username: username })
+        .then(userData => {
             if (userData == null) {
-                res.status(404).send("No user found.");
+                res.status(404).send({
+                    error: "NO_USER_FOUND",
+                    request: req.body
+                });
             } else {
-                res.send(userData);
+                res.send({
+                    data:userData,
+                    request: req.body
+                });
             }
-        }
-    });
+        })
+        .catch(err => {
+            res.status(500).send({
+                error: "SERVER_ERROR",
+                request: req.body
+            });
+        });
 });
 
 // get the current user's data;
@@ -150,36 +126,51 @@ usersRouter.get('/me', userReqValidation.validateCurrentUserRequest, async (req,
     await User.findById(userId)
         .then(currentUser => {
             if (currentUser == null) {
-                res.status(401).send("No user found. Try signing in again!");
+                res.status(401).send({
+                    error: "NO_USER_FOUND",
+                    request: req.body
+                });
             } else {
-                res.send(currentUser);
+                res.send({
+                    data: currentUser,
+                    request: req.body
+                });
             }
         })
         .catch(err => {
             res.status(500).send(err);
-        })
+        });
 });
 
 // get all stories by a given user;
-usersRouter.get('/get/:username/stories', async (req, res) => {
+usersRouter.get('/get/:username/stories', (req, res) => {
     const username = req.params.username;
-    await Story.find({ owner: username }, (err, stories) => {
-        if (err) {
-            res.status(500).send({ error: "An error occured fetching the stories." });
-        } else {
+    Story.find({ owner: username })
+        .then(stories => {
             if (stories.length == 0) {
-                res.status(404).send("No stories found for the given user.");
+                res.status(404).send({
+                    error: "NO_STORIES_FOUND",
+                    request: req.body
+                });
             } else {
-                res.send(stories);
+                res.send({
+                    data: stories,
+                    request: req.body
+                });
             }
-        }
-    });
+        })
+        .catch(err => {
+            res.status(500).send({
+                error: "SERVER_ERROR",
+                request: req.body
+            })
+        });
 });
 
 // send sign-in link to user via mail;
-usersRouter.post('/signin', async (req, res) => {
+usersRouter.post('/signin', (req, res) => {
     userEmail = req.body.email;
-    await User.findOne({ email: userEmail })
+    User.findOne({ email: userEmail })
         .then(async (user) => {
             if (user) {
                 await sendSignInEmailToUser(user)
@@ -220,10 +211,16 @@ usersRouter.get('/authenticate/:reqRandomString', async (req, res) => {
         if (storedRandomString === reqRandomString) {
             const user = await User.findOne({ email: reqEmail });
             const token = user.generateJWT();
-            res.cookie('x-auth-token', token).send();
+            res.cookie('x-auth-token', token).send({
+                data: "AUTH_SUCCESSFUL",
+                request: req.body
+            });
             redisClient.del(reqEmail);
         } else {
-            res.status(500).send(err);
+            res.status(500).send({
+                error: "TOKEN_NOT_FOUND",
+                request: req.body
+            });
         }
     });
 

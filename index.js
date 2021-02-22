@@ -1,9 +1,7 @@
-const { urlencoded } = require('express');
+// regular imports;
 const express = require('express');
 const helmet = require('helmet');
 const app = express();
-const users = require('./routes/users');
-const stories = require('./routes/stories');
 const cors = require('cors');
 const mongoose = require('mongoose');
 const morgan = require('morgan');
@@ -16,6 +14,8 @@ app.use(cors());
 app.use(morgan(':method :url :status :res[content-length] - :response-time ms'));
 
 // routes;
+const users = require('./routes/users');
+const stories = require('./routes/stories');
 app.use('/api/user', users);
 app.use('/api/story', stories);
 
