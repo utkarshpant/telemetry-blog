@@ -16,7 +16,6 @@ async function validateNewStoryRequest(req, res, next) {
                 .trim(),
         content: {
             title: joi.string()
-                    .required()
                     .min(1)
                     .max(200)
                     .trim(),
@@ -30,26 +29,23 @@ async function validateNewStoryRequest(req, res, next) {
             .max(20000)
             .trim(),
         },
+        isPublished: joi.boolean,
+        datePublished: joi.date,
         tags: joi.array()
                 .items(joi.string().max(15))
                 .max(5),
-        socialMediaHandles: {
-            twitter: joi.string()
-                        .max(15)
-                        .min(2)
-        }
     });
 
     jwt.verify(req.header('x-auth-token'), config.get('jwtPrivateKey'), async (err, decoded) => {
         if (err) {
-            return res.status(401).send(err);
+            return res.status(401).send({error: err, request: req.body});
         } else {
-            req.userId = decoded._id;
+            req.username = decoded.username;
             try {
                 const result = await schema.validateAsync(req.body, {allowUnknown: true});
                 next();
             } catch (err) {
-                return res.status(400).send(err);
+                return res.status(400).send({error: err, request: req.body});
             }
         }
     });
@@ -65,7 +61,6 @@ async function validateUpdateStoryRequest(req, res, next) {
     const schema = joi.object({
         content: {
             title: joi.string()
-                    .required()
                     .min(1)
                     .max(200)
                     .trim(),
@@ -85,14 +80,14 @@ async function validateUpdateStoryRequest(req, res, next) {
     
     jwt.verify(req.header('x-auth-token'), config.get('jwtPrivateKey'), async (err, decoded) => {
         if (err) {
-            return res.status(401).send(err);
+            return res.status(401).send({error: "INVALID_TOKEN", request: req.body});
         } else {
-            req.userId = decoded._id;
+            req.username = decoded.username;
             try {
                 const result = await schema.validateAsync(req.body);
                 next();
             } catch (err) {
-                return res.status(400).send(err);
+                return res.status(400).send({error: err, request: req.body});
             }
         }
     });

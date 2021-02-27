@@ -75,11 +75,11 @@ usersRouter.post('/signup', userReqValidation.validateNewUserRequest, async (req
 
 // update existing user;
 usersRouter.post('/update/:username', userReqValidation.validateUpdateUserDataRequest, async (req, res) => {
-    const userIdOrEmail = req.params.username;
+    const username = req.params.username;
     const user = await User.findOne({ username: username });
 
-    if (userId != req.userId) {
-        return res.status(401).send("Invalid token");
+    if (user.username != req.username) {
+        return res.status(401).send({error: "INVALID_TOKEN", request: req.body});
     }
 
     for (property of Object.keys(req.body)) {
@@ -88,9 +88,9 @@ usersRouter.post('/update/:username', userReqValidation.validateUpdateUserDataRe
 
     await user.save((err, savedUser) => {
         if (err) {
-            res.status(500).send(err);
+            res.status(500).send({error: err, request: req});
         } else {
-            res.send(savedUser);
+            res.send({data: savedUser, request: req.body});
         }
     })
 });
@@ -107,7 +107,7 @@ usersRouter.get('/get/:username', (req, res) => {
                 });
             } else {
                 res.send({
-                    data:userData,
+                    data: userData,
                     request: req.body
                 });
             }
@@ -122,8 +122,8 @@ usersRouter.get('/get/:username', (req, res) => {
 
 // get the current user's data;
 usersRouter.get('/me', userReqValidation.validateCurrentUserRequest, async (req, res) => {
-    const userId = req.userId;
-    await User.findById(userId)
+    const username = req.username;
+    await User.findOne({username: username})
         .then(currentUser => {
             if (currentUser == null) {
                 res.status(401).send({
