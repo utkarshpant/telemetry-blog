@@ -22,6 +22,7 @@ const usersRouter = express.Router();
 // User Schema;
 const User = require('../schema/userSchema');
 const Story = require('../schema/storySchema');
+const { property } = require('lodash');
 
 // setting the routes;
 usersRouter.get('/', (req, res) => {
@@ -32,7 +33,16 @@ usersRouter.get('/', (req, res) => {
 // validations for existing users will come under auth API;
 usersRouter.post('/signup', userReqValidation.validateNewUserRequest, async (req, res) => {
     const reponse = {};
-    
+    await user.findOne({ username: req.body.username })
+        .then(user => {
+            if (user) {
+                return res.status(401).send({
+                    error: "USERNAME_TAKEN",
+                    response: res.body
+                })
+            }
+        })
+
     user = new User({
         firstName: req.body.name.split(' ')[0],
         lastName: (req.body.name.split(' ')[1] ? req.body.name.split(' ')[1] : ""),
@@ -66,9 +76,9 @@ usersRouter.post('/signup', userReqValidation.validateNewUserRequest, async (req
             for (field in error.errors) {
                 errObj[field] = error.errors[field].message;
             }
-            res.status(500).send({ 
-                error: errObj, 
-                request: req.body 
+            res.status(500).send({
+                error: errObj,
+                request: req.body
             });
         })
 });
@@ -79,18 +89,19 @@ usersRouter.post('/update/:username', userReqValidation.validateUpdateUserDataRe
     const user = await User.findOne({ username: username });
 
     if (user.username != req.username) {
-        return res.status(401).send({error: "INVALID_TOKEN", request: req.body});
+        return res.status(401).send({ error: "INVALID_TOKEN", request: req.body });
     }
 
-    for (property of Object.keys(req.body)) {
+    for (let property of Object.keys(req.body)) {
         user[property] = req.body[property];
+        // console.log(property);
     }
 
     await user.save((err, savedUser) => {
         if (err) {
-            res.status(500).send({error: err, request: req});
+            res.status(500).send({ error: err, request: req.body });
         } else {
-            res.send({data: savedUser, request: req.body});
+            res.send({ data: savedUser, request: req.body });
         }
     })
 });
@@ -123,7 +134,7 @@ usersRouter.get('/get/:username', (req, res) => {
 // get the current user's data;
 usersRouter.get('/me', userReqValidation.validateCurrentUserRequest, async (req, res) => {
     const username = req.username;
-    await User.findOne({username: username})
+    await User.findOne({ username: username })
         .then(currentUser => {
             if (currentUser == null) {
                 res.status(401).send({
@@ -174,18 +185,18 @@ usersRouter.post('/signin', (req, res) => {
         .then(async (user) => {
             if (user) {
                 await sendSignInEmailToUser(user)
-                .then(sent => {
-                    res.send({
-                        data: "EMAIL_SENT",
-                        request: req.body
-                    });
-                })
-                .catch(unsent => {
-                    res.status(500).send({
-                        error: "EMAIL_ERROR",
-                        request: req.body
-                    });
-                })
+                    .then(sent => {
+                        res.send({
+                            data: "EMAIL_SENT",
+                            request: req.body
+                        });
+                    })
+                    .catch(unsent => {
+                        res.status(500).send({
+                            error: "EMAIL_ERROR",
+                            request: req.body
+                        });
+                    })
             } else {
                 res.status(404).send({
                     error: {
@@ -196,28 +207,40 @@ usersRouter.post('/signin', (req, res) => {
             }
         })
         .catch(error => {
-            res.status(500).send({ 
-                error: "SERVER_ERROR", 
-                request: req.body 
+            res.status(500).send({
+                error: "SERVER_ERROR",
+                request: req.body
             });
         })
 });
 
+/*
+    The authentication endpoint that is hit by the landing page on 
+    successful sign in. 
+
+    This method sets the access token as a cookie and returns
+    a response body that includes the current user object 
+    and the corresponding role, with status 200 OK.
+
+    If the random token is not found in redis,
+    a 410 GONE response is returned with an error object.
+*/
 usersRouter.get('/authenticate/:reqRandomString', async (req, res) => {
     const reqRandomString = req.params.reqRandomString;
     const reqEmail = req.query.email;
-
+    // res.send("Hello");
     redisClient.get(reqEmail, async (err, storedRandomString) => {
         if (storedRandomString === reqRandomString) {
             const user = await User.findOne({ email: reqEmail });
             const token = user.generateJWT();
             res.cookie('x-auth-token', token).send({
-                data: "AUTH_SUCCESSFUL",
+                data: user,
+                role: "author",
                 request: req.body
             });
             redisClient.del(reqEmail);
         } else {
-            res.status(500).send({
+            res.status(410).send({
                 error: "TOKEN_NOT_FOUND",
                 request: req.body
             });
@@ -233,7 +256,7 @@ usersRouter.get('/authenticate/:reqRandomString', async (req, res) => {
 async function sendSignInEmailToUser(user) {
     new Promise(async (resolve, reject) => {
         const randomString = randomBytes(4).toString('hex');
-        const link = "https://localhost:3000/api/user/authenticate/" + randomString + "?email=" + user.email;
+        const link = "https://localhost:4000/api/user/authenticate/" + randomString + "?email=" + user.email;
         var message = {
             "to": user.email,
             "from": {

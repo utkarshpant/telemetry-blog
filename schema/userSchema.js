@@ -7,7 +7,6 @@ const { gt, lte, gte } = require('lodash');
 const userSchema = new mongoose.Schema({
     firstName: {
         type: String,
-        required: true,
         trim: true,
         validate: {
             validator: (value) => {
@@ -28,37 +27,20 @@ const userSchema = new mongoose.Schema({
     },
     username: {
         type:String,
-        required: true,
         trim: true,
         max: 20,
         validate: {
-            validator: async (value) => {
-                const exists = await mongoose.model("User", userSchema).exists({username: value});
-                if (exists) {
-                    return false;
-                } else {
-                    return true;
-                }
+            validator: (value) => {
+                return (gte(value.length, 0) && lte(value.length, 50))
             },
-            message: "USERNAME_TAKEN"
+            message: "INVALID_USERNAME"
         }
     },
     email: {
         type: String,
         required: true,
         trim: true,
-        max: 50,
-        validate: {
-            validator: async (value) => {
-                const exists = await mongoose.model("User", userSchema).exists({email: value});
-                if (exists) {
-                    return false;
-                } else {
-                    return true;
-                }
-            },
-            message: "EMAIL_TAKEN"
-        }
+        max: 50, 
     },
     bio: String,
     profilePicture: String,
