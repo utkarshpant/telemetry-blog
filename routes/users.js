@@ -233,10 +233,11 @@ usersRouter.get('/authenticate/:reqRandomString', async (req, res) => {
         if (storedRandomString === reqRandomString) {
             const user = await User.findOne({ email: reqEmail });
             const token = user.generateJWT();
-            res.cookie('x-auth-token', token).send({
+            res.send({
                 data: user,
                 role: "author",
-                request: req.body
+                request: req.body,
+                token: token
             });
             redisClient.del(reqEmail);
         } else {
@@ -256,7 +257,7 @@ usersRouter.get('/authenticate/:reqRandomString', async (req, res) => {
 async function sendSignInEmailToUser(user) {
     new Promise(async (resolve, reject) => {
         const randomString = randomBytes(4).toString('hex');
-        const link = "https://localhost:4000/api/user/authenticate/" + randomString + "?email=" + user.email;
+        const link = "https://localhost:3000/authenticate/" + randomString + "?email=" + user.email;
         var message = {
             "to": user.email,
             "from": {
