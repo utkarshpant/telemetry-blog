@@ -32,7 +32,11 @@ storiesRouter.post('/new', storyReqValidation.validateNewStoryRequest, async (re
 
     await story.save()
         .then(savedStory => {
-            res.send({ data: savedStory, request: req.body });
+            res.send({ 
+                data: savedStory, 
+                created: savedStory._id.getTimestamp(),
+                request: req.body 
+            });
         })
         .catch(err => {
             res.status(500).send({ error: "SERVER_ERROR", request: req.body });
@@ -55,7 +59,11 @@ storiesRouter.get('/get/:storyId', async (req, res) => {
                     request: req.body
                 });
             }
-            res.send(story);
+            res.send({
+                data: story,
+                created: story._id.getTimestamp(),
+                request: req.body
+            });
         }
     });
 });

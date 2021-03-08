@@ -29,8 +29,6 @@ async function validateNewStoryRequest(req, res, next) {
             .max(20000)
             .trim(),
         },
-        isPublished: joi.boolean,
-        datePublished: joi.date,
         tags: joi.array()
                 .items(joi.string().max(15))
                 .max(5),
@@ -59,6 +57,11 @@ async function validateNewStoryRequest(req, res, next) {
 */
 async function validateUpdateStoryRequest(req, res, next) {
     const schema = joi.object({
+        owner: joi.string()
+                .min(3)
+                .max(50)
+                .required()
+                .trim(),
         content: {
             title: joi.string()
                     .min(1)
@@ -73,6 +76,7 @@ async function validateUpdateStoryRequest(req, res, next) {
             .max(20000)
             .trim(),
         },
+        dateModified: joi.date(),
         tags: joi.array()
                 .items(joi.string().max(15))
                 .max(5),

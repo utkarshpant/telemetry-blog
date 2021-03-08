@@ -15,10 +15,6 @@ const storySchema = new mongoose.Schema({
         type: Boolean,
         default: false
     },
-    dateCreated: {
-        type: Date,
-        default: Date.now
-    },
     datePublished: {
         type: Date,
         default: null
@@ -26,7 +22,7 @@ const storySchema = new mongoose.Schema({
     dateModified: {
         type: Date,
         default: Date.now
-    }
+    },
 });
 
 module.exports = mongoose.model('Story', storySchema);
