@@ -16,8 +16,10 @@ app.use(morgan(':method :url :status :res[content-length] - :response-time ms'))
 // routes;
 const users = require('./routes/users');
 const stories = require('./routes/stories');
+const searchRouter = require('./routes/search');
 app.use('/api/user', users);
 app.use('/api/story', stories);
+app.use('/api/search', searchRouter);
 
 // connecting to the database;
 const connectionString = 'mongodb://localhost/telemetry-blog';
