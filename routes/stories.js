@@ -54,7 +54,7 @@ storiesRouter.get('/get/:storyId', async (req, res) => {
             });
         } else {
             if (story == null) {
-                res.status(404).send({
+                return res.status(404).send({
                     err: "NO_STORY_FOUND",
                     request: req.body
                 });

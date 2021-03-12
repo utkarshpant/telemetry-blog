@@ -31,10 +31,13 @@ searchRouter.get('/', (req, res) => {
     })
 
     const storySearchResults = Story.find({
+
+        "isPublished": true,
         $or: [
+            { "owner": { $regex: query, $options: 'i' } },
             { "content.title": { $regex: query, $options: 'i' } },
             { "content.subtitle": { $regex: query, $options: 'i' } },
-            // { tags: { $in: [{ $regex: query }] } }
+            { "tags": query }
         ]
     })
 
@@ -47,7 +50,7 @@ searchRouter.get('/', (req, res) => {
         })
         .catch(err => {
             res.status(500).send({
-                error: "INTERNAL_SERVER_ERROR",
+                error: err,
                 request: req.query
             })
         });

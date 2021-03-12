@@ -33,53 +33,54 @@ usersRouter.get('/', (req, res) => {
 // validations for existing users will come under auth API;
 usersRouter.post('/signup', userReqValidation.validateNewUserRequest, async (req, res) => {
     const reponse = {};
-    await user.findOne({ username: req.body.username })
-        .then(user => {
-            if (user) {
+    User.findOne({ username: req.body.username })
+        .then(existingUser => {
+            if (existingUser) {
                 return res.status(401).send({
                     error: "USERNAME_TAKEN",
                     response: res.body
                 })
             }
-        })
 
-    user = new User({
-        firstName: req.body.name.split(' ')[0],
-        lastName: (req.body.name.split(' ')[1] ? req.body.name.split(' ')[1] : ""),
-        username: req.body.username,
-        email: req.body.email,
-        bio: req.body.bio,
-        profilePicture: "",
-        socialMediaHandles: {
-            twitter: req.body.twitter,
-        }
-    });
-
-    await user.save()
-        .then(async (savedUser) => {
-            await sendSignInEmailToUser(savedUser)
-                .then(sent => {
-                    res.send({
-                        data: "EMAIL_SENT",
-                        request: req.body
-                    });
-                })
-                .catch(unsent => {
-                    res.status(500).send({
-                        error: "EMAIL_ERROR",
-                        request: req.body
-                    });
-                })
-        })
-        .catch(error => {
-            let errObj = {};
-            for (field in error.errors) {
-                errObj[field] = error.errors[field].message;
-            }
-            res.status(500).send({
-                error: errObj,
-                request: req.body
+            user = new User({
+                firstName: req.body.name.split(' ')[0],
+                lastName: (req.body.name.split(' ')[1] ? req.body.name.split(' ')[1] : ""),
+                username: req.body.username,
+                email: req.body.email,
+                bio: req.body.bio,
+                profilePicture: "",
+                socialMediaHandles: {
+                    twitter: req.body.twitter,
+                }
             });
+
+            user.save()
+                .then(async (savedUser) => {
+                    await sendSignInEmailToUser(savedUser)
+                        .then(sent => {
+                            res.send({
+                                data: "EMAIL_SENT",
+                                request: req.body
+                            });
+                        })
+                        .catch(unsent => {
+                            res.status(500).send({
+                                error: "EMAIL_ERROR",
+                                request: req.body
+                            });
+                        })
+                })
+                .catch(error => {
+                    let errObj = {};
+                    for (field in error.errors) {
+                        errObj[field] = error.errors[field].message;
+                    }
+                    res.status(500).send({
+                        error: errObj,
+                        request: req.body
+                    });
+                })
+
         })
 });
 
