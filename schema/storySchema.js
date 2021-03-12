@@ -11,10 +11,18 @@ const storySchema = new mongoose.Schema({
         body: String,
     },
     tags: [String],
+    isPublished: {
+        type: Boolean,
+        default: false
+    },
     datePublished: {
         type: Date,
+        default: null
+    },
+    dateModified: {
+        type: Date,
         default: Date.now
-    }
+    },
 });
 
 module.exports = mongoose.model('Story', storySchema);

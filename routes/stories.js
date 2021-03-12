@@ -14,11 +14,11 @@ storiesRouter.get('/', (req, res) => {
 
 
 // save a story;
-storiesRouter.post('/new', storyReqValidation.validateNewStoryRequest, async(req, res) => {
-    
-    if (req.body.owner !== req.userId) {
-        return res.status(401).send("Invalid token.");
-    } 
+storiesRouter.post('/new', storyReqValidation.validateNewStoryRequest, async (req, res) => {
+
+    if (req.body.owner !== req.username) {
+        return res.status(401).send({ error: "INVALID_TOKEN", request: req.body });
+    }
 
     story = new Story({
         owner: req.body.owner,
@@ -30,13 +30,17 @@ storiesRouter.post('/new', storyReqValidation.validateNewStoryRequest, async(req
         tags: req.body.storyTags
     });
 
-    await story.save((err, savedStory) => {
-        if (err) {
-            res.status(500).send("An error occured.");
-        } else {
-            res.send(savedStory);
-        }
-    });
+    await story.save()
+        .then(savedStory => {
+            res.send({ 
+                data: savedStory, 
+                created: savedStory._id.getTimestamp(),
+                request: req.body 
+            });
+        })
+        .catch(err => {
+            res.status(500).send({ error: "SERVER_ERROR", request: req.body });
+        })
 });
 
 // get story by ID;
@@ -44,46 +48,68 @@ storiesRouter.get('/get/:storyId', async (req, res) => {
     const storyId = req.params.storyId;
     await Story.findById(storyId, (err, story) => {
         if (err) {
-            res.status(500).send("We're sorry, an error occured.");
+            res.status(500).send({
+                err: "SERVER_ERROR",
+                request: req.body
+            });
         } else {
             if (story == null) {
-                res.status(404).send("The requested Story couldn't be found. Re-check the ID!");
+                return res.status(404).send({
+                    err: "NO_STORY_FOUND",
+                    request: req.body
+                });
             }
-            res.send(story);
+            res.send({
+                data: story,
+                created: story._id.getTimestamp(),
+                request: req.body
+            });
         }
     });
 });
 
 // edit a story;
-storiesRouter.post('/update/:storyId', storyReqValidation.validateUpdateStoryRequest, async(req, res) => {
+storiesRouter.post('/update/:storyId', storyReqValidation.validateUpdateStoryRequest, async (req, res) => {
     const storyId = req.params.storyId;
     await Story.findById(storyId, async (err, story) => {
         if (err) {
             res.status(500).send(err);
         } else {
             if (story == null) {
-                res.status(404).send("The requested Story couldn't be found. Re-check the ID!");
+                res.status(404).send({
+                    err: "NO_STORY_FOUND",
+                    request: req.body
+                });
             }
-            
-            if (story.owner != req.userId) {
-                return res.status(401).send("Invalid token.");
+
+            if (story.owner != req.username) {
+                return res.status(401).send({
+                    err: "INVALID_TOKEN",
+                    request: req.body
+                });
             }
-        
+
             for (property of Object.keys(req.body)) {
                 story[property] = req.body[property];
             }
-        
+
             await story.save((err, savedStory) => {
                 if (err) {
-                    res.status(500).send(err);
+                    res.status(500).send({
+                        err: "SERVER_ERROR",
+                        request: req.body
+                    });
                 } else {
-                    res.send(savedStory);
+                    res.send({
+                        data: savedStory,
+                        request: req.body
+                    });
                 }
             });
         }
     });
-   
-    
+
+
 });
 
 // delete a story;
