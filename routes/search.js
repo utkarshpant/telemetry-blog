@@ -4,7 +4,6 @@ const express = require('express');
 // User and Story Schema;
 const User = require('../schema/userSchema');
 const Story = require('../schema/storySchema');
-const { values } = require('lodash');
 
 const searchRouter = express.Router();
 
