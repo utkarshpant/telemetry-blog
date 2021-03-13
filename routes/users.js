@@ -262,7 +262,7 @@ usersRouter.get('/authenticate/:reqRandomString', async (req, res) => {
 async function sendSignInEmailToUser(user) {
     new Promise(async (resolve, reject) => {
         const randomString = randomBytes(4).toString('hex');
-        const link = "https://localhost:3000/authenticate/" + randomString + "?email=" + user.email;
+        const link = "https://www.telemetry-blog.netlify.app/authenticate/" + randomString + "?email=" + user.email;
         var message = {
             "to": user.email,
             "from": {
