@@ -5,6 +5,7 @@ const app = express();
 const cors = require('cors');
 const mongoose = require('mongoose');
 const morgan = require('morgan');
+const config = require('config');
 
 // setting middlewares;
 app.use(express.json());
@@ -22,14 +23,24 @@ app.use('/api/story', stories);
 app.use('/api/search', searchRouter);
 
 // connecting to the database;
-const connectionString = 'mongodb://localhost/telemetry-blog';
-mongoose.connect(connectionString, { useNewUrlParser: true, useUnifiedTopology: true }, (err) => {
-    if (err) {
-        console.log("The following error occured:\n", err);
-    } else {
-        console.log("Connected to the dev database!");
-    }
-});
+let connectionString = '';
+
+if (app.get('env') == 'development') {
+    connectionString = 'mongodb://localhost/telemetry-blog';
+}
+else {
+    connectionString = config.get('mongodbConnectionString');
+}
+
+mongoose.connect(connectionString, { useNewUrlParser: true, useUnifiedTopology: true })
+.then(connected => {
+    console.log("Connected to the database!");
+})
+.catch(err => {
+    console.log("Couldn't connect to the database.");
+})
+
+console.log(app.get('env'), "connectionstring:\t", connectionString);
 
 mongoose.set('useFindAndModify', false);
     
