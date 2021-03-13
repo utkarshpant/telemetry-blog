@@ -32,10 +32,10 @@ storiesRouter.post('/new', storyReqValidation.validateNewStoryRequest, async (re
 
     await story.save()
         .then(savedStory => {
-            res.send({ 
-                data: savedStory, 
+            res.send({
+                data: savedStory,
                 created: savedStory._id.getTimestamp(),
-                request: req.body 
+                request: req.body
             });
         })
         .catch(err => {
@@ -121,6 +121,39 @@ storiesRouter.delete('/delete/:storyId', async (req, res) => {
             res.status(500).send("An error occured in deleting the story.");
         });
     res.status(204).send();
+})
+
+// publish or unpublish a story;
+storiesRouter.get('/:action/:storyId', async (req, res) => {
+    const action = req.params.action;
+    const storyId = req.params.storyId;
+    let update = null;
+    if (action == "publish") {
+        update = {
+            "isPublished": true
+        }
+    } else if (action == "unpublish") {
+        update = {
+            "isPublished": false
+        }
+    } else {
+        return res.status(400).send({
+            err: "UNKNOWN_REQUEST",
+            request: req.params
+        })
+    }
+
+    Story.findByIdAndUpdate(storyId, update)
+        .then(story => {
+            res.send({
+                data: story,
+                request: req.params
+            })
+        })
+        .catch({
+            err: err,
+            request: req.params
+        })
 })
 
 module.exports = storiesRouter;

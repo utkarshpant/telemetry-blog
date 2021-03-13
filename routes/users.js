@@ -18,6 +18,10 @@ const redisClient = redis.createClient();
 const userReqValidation = require('../middlewares/userMiddleware');
 const usersRouter = express.Router();
 
+// handling any connect errors;
+redisClient.on('error', function(err) {
+    console.log("Error", err);
+})
 
 // User Schema;
 const User = require('../schema/userSchema');
@@ -181,8 +185,8 @@ usersRouter.get('/get/:username/stories', (req, res) => {
 
 // send sign-in link to user via mail;
 usersRouter.post('/signin', (req, res) => {
-    userEmail = req.body.email;
-    User.findOne({ email: userEmail })
+    userUsername = req.body.username;
+    User.findOne({ username: userUsername })
         .then(async (user) => {
             if (user) {
                 await sendSignInEmailToUser(user)
@@ -201,7 +205,7 @@ usersRouter.post('/signin', (req, res) => {
             } else {
                 res.status(404).send({
                     error: {
-                        email: "NO_SUCH_EMAIL"
+                        username: "NO_SUCH_USERNAME"
                     },
                     request: req.body
                 });
