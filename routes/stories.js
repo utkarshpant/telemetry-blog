@@ -112,7 +112,7 @@ storiesRouter.post('/update/:storyId', storyReqValidation.validateUpdateStoryReq
 
 });
 
-// delete a story;
+// delete a given story;
 storiesRouter.delete('/delete/:storyId', async (req, res) => {
     const storyId = req.params.storyId;
     await Story.findByIdAndDelete(storyId)
