@@ -1,5 +1,6 @@
 {
     "jwtPrivateKey": "telemetry_jwtPrivateKey",
     "txnMailAPIKey": "SENDGRID_API_KEY",
-    "txnMailTemplateId": "telemetry_txnMailTemplateId"
+    "txnMailTemplateId": "telemetry_txnMailTemplateId",
+    "mongodbConnectionString": "telemetry_mongodbConnectionString"
 }
