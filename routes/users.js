@@ -14,7 +14,7 @@ const redis = require('redis');
 */
 
 sgMail.setApiKey(config.get('txnMailAPIKey'));
-const redisClient = redis.createClient();
+const redisClient = redis.createClient(process.env.REDIS_URL || 'redis://localhost:6379');
 const userReqValidation = require('../middlewares/userMiddleware');
 const usersRouter = express.Router();
 
