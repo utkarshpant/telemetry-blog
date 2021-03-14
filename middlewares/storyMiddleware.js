@@ -24,7 +24,6 @@ async function validateNewStoryRequest(req, res, next) {
                     .max(200)
                     .trim(),
             body: joi.string()
-            .required()
             .min(1)
             .max(20000)
             .trim(),
