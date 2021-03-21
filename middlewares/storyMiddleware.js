@@ -25,7 +25,6 @@ async function validateNewStoryRequest(req, res, next) {
                     .trim(),
             body: joi.string()
             .min(1)
-            .max(5000000)
             .trim(),
         },
         tags: joi.array()
