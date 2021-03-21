@@ -5,6 +5,7 @@ const sgMail = require('@sendgrid/mail');
 const { randomBytes } = require('crypto');
 const config = require('config');
 const redis = require('redis');
+const app = express();
 
 /*
     1. Setting up SendGrid API and methods;
@@ -262,7 +263,15 @@ usersRouter.get('/authenticate/:reqRandomString', async (req, res) => {
 async function sendSignInEmailToUser(user) {
     new Promise(async (resolve, reject) => {
         const randomString = randomBytes(4).toString('hex');
-        const link = "http://www.telemetryblog.in/authenticate/" + randomString + "?email=" + user.email;
+        let host = null;
+        if (app.get('env') === 'development') {
+            host = 'http://localhost:3000'
+        } else {
+            host = 'https://www.telemetryblog.in'
+        }
+        
+        const link = host + "/authenticate/" + randomString + "?email=" + user.email;
+
         var message = {
             "to": user.email,
             "from": {
@@ -277,6 +286,7 @@ async function sendSignInEmailToUser(user) {
                 signInLinkText: link
             }
         };
+        
         await sgMail.send(message)
             .then(response => {
                 // console.log(sentMailResponse);
