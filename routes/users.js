@@ -233,11 +233,11 @@ usersRouter.post('/signin', (req, res) => {
 */
 usersRouter.get('/authenticate/:reqRandomString', async (req, res) => {
     const reqRandomString = req.params.reqRandomString;
-    const reqEmail = req.query.email;
+    const reqUsername = req.query.username;
     // res.send("Hello");
-    redisClient.get(reqEmail, async (err, storedRandomString) => {
+    redisClient.get(reqUsername, async (err, storedRandomString) => {
         if (storedRandomString === reqRandomString) {
-            const user = await User.findOne({ email: reqEmail });
+            const user = await User.findOne({ username: reqUsername });
             const token = user.generateJWT();
             res.send({
                 data: user,
@@ -245,7 +245,7 @@ usersRouter.get('/authenticate/:reqRandomString', async (req, res) => {
                 request: req.body,
                 token: token
             });
-            redisClient.del(reqEmail);
+            redisClient.del(reqUsername);
         } else {
             res.status(410).send({
                 error: "TOKEN_NOT_FOUND",
@@ -270,7 +270,7 @@ async function sendSignInEmailToUser(user) {
             host = 'https://www.telemetryblog.in'
         }
         
-        const link = host + "/authenticate/" + randomString + "?email=" + user.email;
+        const link = host + "/authenticate/" + randomString + "?username=" + user.username;
 
         var message = {
             "to": user.email,
@@ -282,7 +282,7 @@ async function sendSignInEmailToUser(user) {
             "dynamic_template_data": {
                 name: user.firstName,
                 randomToken: randomString,
-                userEmail: user.email,
+                userEmail: user.username,
                 signInLinkText: link
             }
         };
@@ -290,7 +290,7 @@ async function sendSignInEmailToUser(user) {
         await sgMail.send(message)
             .then(response => {
                 // console.log(sentMailResponse);
-                redisClient.set(user.email, randomString);
+                redisClient.set(user.username, randomString);
                 resolve(true);
                 console.log("SENT EMAIL");
             })
