@@ -4,6 +4,12 @@ const storiesRouter = express.Router();
 const _ = require('lodash');
 const storyReqValidation = require("../middlewares/storyMiddleware");
 
+// cors;
+const cors = require('cors');
+const corsOptions = {
+    origin: ['http://localhost:3000', 'https://www.telemetryblog.in']
+}
+
 // Story Schema;
 const Story = require('../schema/storySchema');
 
@@ -69,7 +75,7 @@ storiesRouter.get('/get/:storyId', async (req, res) => {
 });
 
 // edit a story;
-storiesRouter.post('/update/:storyId', storyReqValidation.validateUpdateStoryRequest, async (req, res) => {
+storiesRouter.post('/update/:storyId', cors(corsOptions), storyReqValidation.validateUpdateStoryRequest, async (req, res) => {
     const storyId = req.params.storyId;
     await Story.findById(storyId, async (err, story) => {
         if (err) {
@@ -100,7 +106,7 @@ storiesRouter.post('/update/:storyId', storyReqValidation.validateUpdateStoryReq
                         request: req.body
                     });
                 } else {
-                    res.send({
+                    res.header().send({
                         data: savedStory,
                         request: req.body
                     });
