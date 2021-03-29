@@ -8,10 +8,13 @@ const morgan = require('morgan');
 const config = require('config');
 
 // setting middlewares;
+const corsOptions = {
+    origin: ['http://localhost:3000', 'https://www.telemetryblog.in']
+}
 app.use(express.json());
 app.use(express.urlencoded({extended: true}));
 app.use(helmet());
-app.use(cors());
+app.use(cors(corsOptions));
 app.use(morgan(':method :url :status :res[content-length] - :response-time ms'));
 
 // routes;
