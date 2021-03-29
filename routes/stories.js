@@ -9,6 +9,7 @@ const cors = require('cors');
 const corsOptions = {
     origin: ['http://localhost:3000', 'https://www.telemetryblog.in']
 }
+storiesRouter.use(cors());
 
 // Story Schema;
 const Story = require('../schema/storySchema');
