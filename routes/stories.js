@@ -106,7 +106,7 @@ storiesRouter.post('/update/:storyId', cors(corsOptions), storyReqValidation.val
                         request: req.body
                     });
                 } else {
-                    res.header('Access-Control-Allow-Origin', '*').send({
+                    res.setHeader('Access-Control-Allow-Origin', '*').send({
                         data: savedStory,
                         request: req.body
                     });
